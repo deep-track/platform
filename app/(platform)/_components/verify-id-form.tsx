@@ -64,8 +64,8 @@ const VerifyIdentityForm = () => {
     <div className="w-full mb-8">
       <div className="h-2 bg-gray-200 rounded-full relative">
         <div
-          className="h-full bg-customTeal transform-gpu rounded-full transition-transform duration-500 ease-out"
-          style={{ transform: `scaleX(${(currentStep + 1) / STEPS.length})` }}
+          className="h-full bg-customTeal rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
         />
       </div>
       <div className="mt-4 flex justify-between text-sm text-gray-500">
@@ -74,6 +74,7 @@ const VerifyIdentityForm = () => {
       </div>
     </div>
   );
+
 
   const DocumentSelection = () => (
     <div className="space-y-4">
