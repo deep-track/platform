@@ -93,7 +93,7 @@ const VerifyIdentityForm = () => {
           onClick={() => handleDocumentSelect("drivers-license")}
         >
           <FileText className="w-6 h-6 text-customTeal mb-2" />
-          <h3 className="font-medium">Driver's License</h3>
+          <h3 className="font-medium">Driver&apos;s License</h3>
         </div>
         <div
           className={`relative p-6 border rounded-lg transition-all duration-300 hover:border-customTeal hover:shadow-md cursor-pointer ${selectedDocument === "passport" ? "border-customTeal shadow-md" : ""}`}
