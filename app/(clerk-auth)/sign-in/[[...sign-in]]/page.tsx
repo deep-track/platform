@@ -1,7 +1,7 @@
 import LogoLink from "@/components/logo-link";
 import { TypographyH1, TypographyP } from "@/components/ui/typography";
 import { ClerkLoaded, ClerkLoading, SignIn } from "@clerk/nextjs";
-import { Loader } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 
@@ -27,12 +27,21 @@ export default function SignInPage() {
 						<SignIn path="/sign-in" afterSignOutUrl="/" />
 					</ClerkLoaded>
 					<ClerkLoading>
-						<Loader className="size-16 animate-spin text-muted-foreground" />
+						<Loader2 className="size-16 animate-spin text-muted-foreground" />
 					</ClerkLoading>
 				</div>
 			</div>
-			<div className="h-full  hidden lg:flex items-center justify-center relative">
-				<Image src="/banner-image.png" fill alt="logo" />
+			<div className="hidden lg:block relative min-h-[90vh] lg:min-h-[auto]">
+				<div className="absolute inset-0 h-full w-full">
+					<Image
+						src="/dashboard-hero.png"
+						alt="Professional using KYC solution"
+						fill
+						className="object-cover object-center"
+						priority
+						sizes="(max-width: 1440px) 100vw, 50vw"
+					/>
+				</div>
 			</div>
 		</div>
 	);
