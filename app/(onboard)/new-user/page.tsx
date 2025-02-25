@@ -14,7 +14,10 @@ export default async function NewUser() {
 
 
 	if (!user) {
-		await addNewUser(clerkUser.publicMetadata.role as "user" | "admin");
+		await addNewUser(
+			clerkUser.publicMetadata.role as "user" | "admin",
+			clerkUser.publicMetadata.companyId as string,
+		);
 		redirect("/dashboard");
 	} else {
 		redirect("/dashboard");

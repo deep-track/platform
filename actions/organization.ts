@@ -8,13 +8,10 @@ interface CreateCompanyProps {
 	email: string;
 	phone: string;
 	companyDomain: "finance" | "media";
+	companyHeadId: string;
 }
 
 export async function createCompanyAction(props: CreateCompanyProps) {
-	const { userId } = await auth();
-
-	if (!userId) redirect("/sign-in");
-
 	try {
 		const response = await fetch(
 			`${process.env.DEEPTRACK_BACKEND_URL}/v1/companies`,
@@ -24,7 +21,7 @@ export async function createCompanyAction(props: CreateCompanyProps) {
 					name: props.name,
 					email: props.email,
 					phone: props.phone,
-					companyHeadId: userId,
+					companyHeadId: props.companyHeadId,
 					companyDomain: props.companyDomain,
 				}),
 				headers: {
@@ -32,16 +29,13 @@ export async function createCompanyAction(props: CreateCompanyProps) {
 				},
 			},
 		);
-
 		if (!response.ok) {
 			return {
 				status: 500,
 				message: "Something went wrong. Try Again",
 			};
 		}
-
 		const data = await response.json();
-
 		return {
 			status: 200,
 			data,
@@ -53,21 +47,15 @@ export async function createCompanyAction(props: CreateCompanyProps) {
 }
 
 export type CompanyWithMembers = {
-	id: string;
-	name: string;
-	companyHeadId: string;
-	members: Array<{
 		id: string;
-		userId: string;
-		companyId: string;
-		access: Array<{
-			id: string;
-			type: string;
-			userId: string;
-			companyId: string;
-		}>;
-	}>;
-};
+		name: string;
+		email: string;
+		phone: string;
+		companyHeadId: string;
+		companyDomain: "finance" | "media";
+		createdAt: string;
+		updatedAt: string;
+	};
 
 export async function getCompanyAction() {
 	// 'use cache'

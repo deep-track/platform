@@ -44,7 +44,11 @@ const formSchema = z.object({
 	}),
 });
 
-export default function InviteStaffDialog() {
+type Props = {
+	companyId: string;
+};
+
+export default function InviteStaffDialog({ companyId }: Props) {
 	const [open, setOpen] = useState(false);
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -59,6 +63,7 @@ export default function InviteStaffDialog() {
 				values.email,
 				`${process.env.NEXT_PUBLIC_APP_URL}/sign-up` as string,
 				values.role,
+				companyId,
 			);
 
 			form.reset();

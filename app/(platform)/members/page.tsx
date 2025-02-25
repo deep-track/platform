@@ -8,7 +8,7 @@ export default async function MembersPage() {
 	const company = await getCompanyAction();
 	return (
 		<div className="p-4 min-h-[calc(100vh-2.75rem)] h-full">
-			{!company.data && (
+			{!company.data ? (
 				<div className="flex flex-col h-full items-center justify-center space-y-4">
 					<EmptyState
 						iconSize="size-36"
@@ -16,10 +16,11 @@ export default async function MembersPage() {
 					/>
 					<CreateOrganizationDialog />
 				</div>
+			) : (
+				<div className="flex items-center justify-end">
+					<InviteStaffDialog companyId={company.data.id} />
+				</div>
 			)}
-			<div className="flex items-center justify-end">
-				<InviteStaffDialog />
-			</div>
 		</div>
 	);
 }

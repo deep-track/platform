@@ -15,24 +15,26 @@ export async function revokeInvitation(invitationId: string) {
 
 // Function to create a new invitation
 export async function createInvitation(
-	email: string,
-	redirectUrl: string,
-	role: "admin" | "user",
-) {
-	try {
-		await clerkClient.invitations.createInvitation({
-			emailAddress: email,
-			redirectUrl,
-			publicMetadata: {
-				role,
-			},
-			notify: true,
-			ignoreExisting: true,
-		});
-	} catch (error) {
-		console.error("Error creating invitation:", error);
-		throw new Error(
-			"Failed to create invitation. Please check the email or try again.",
-		);
+		email: string,
+		redirectUrl: string,
+		role: "admin" | "user",
+		companyId: string,
+	) {
+		try {
+			await clerkClient.invitations.createInvitation({
+				emailAddress: email,
+				redirectUrl,
+				publicMetadata: {
+					role,
+					companyId,
+				},
+				notify: true,
+				ignoreExisting: true,
+			});
+		} catch (error) {
+			console.error("Error creating invitation:", error);
+			throw new Error(
+				"Failed to create invitation. Please check the email or try again.",
+			);
+		}
 	}
-}
