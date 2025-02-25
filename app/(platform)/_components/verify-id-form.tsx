@@ -64,8 +64,8 @@ const VerifyIdentityForm = () => {
     <div className="w-full mb-8">
       <div className="h-2 bg-gray-200 rounded-full relative">
         <div
-          className="h-full bg-customTeal transform-gpu rounded-full transition-transform duration-500 ease-out"
-          style={{ transform: `scaleX(${(currentStep + 1) / STEPS.length})` }}
+          className="h-full bg-customTeal rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
         />
       </div>
       <div className="mt-4 flex justify-between text-sm text-gray-500">
@@ -74,6 +74,7 @@ const VerifyIdentityForm = () => {
       </div>
     </div>
   );
+
 
   const DocumentSelection = () => (
     <div className="space-y-4">
@@ -92,7 +93,7 @@ const VerifyIdentityForm = () => {
           onClick={() => handleDocumentSelect("drivers-license")}
         >
           <FileText className="w-6 h-6 text-customTeal mb-2" />
-          <h3 className="font-medium">Driver's License</h3>
+          <h3 className="font-medium">Driver&apos;s License</h3>
         </div>
         <div
           className={`relative p-6 border rounded-lg transition-all duration-300 hover:border-customTeal hover:shadow-md cursor-pointer ${selectedDocument === "passport" ? "border-customTeal shadow-md" : ""}`}
