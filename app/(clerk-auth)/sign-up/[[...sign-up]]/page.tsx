@@ -31,8 +31,17 @@ export default function SignUpPage() {
 					</ClerkLoading>
 				</div>
 			</div>
-			<div className="h-full  hidden lg:flex items-center justify-center relative">
-				<Image src="/banner-image.png" fill alt="logo" />
+			<div className="hidden lg:block relative min-h-[90vh] lg:min-h-[auto]">
+				<div className="absolute inset-0 h-full w-full">
+					<Image
+						src="/dashboard-hero.png"
+						alt="Professional using KYC solution"
+						fill
+						className="object-cover object-center"
+						priority
+						sizes="(max-width: 1440px) 100vw, 50vw"
+					/>
+				</div>
 			</div>
 		</div>
 	);
