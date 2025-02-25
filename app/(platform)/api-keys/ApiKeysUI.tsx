@@ -33,7 +33,7 @@ export default function ApiKeysUI({ initialApiKeys }: { initialApiKeys: ApiKey[]
         }
 
         setLoading(true)
-        const result = await createApiKey(keyName)
+        const result = await createApiKey()
         if (result.success) {
             setNewKey(result.apiKey)
             const updatedKeys = await getApiKeys()
