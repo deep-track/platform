@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { auth } from "@clerk/nextjs/server";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 
 export default async function KYCHero() {
 	const { userId } = await auth();
