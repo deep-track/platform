@@ -11,7 +11,6 @@ import React from "react";
 export default async function MembersPage() {
 	const company = await getCompanyAction();
 	const members = await getCompanyMembersAction();
-	console.log(members);
 	return (
 		<div className="p-4 min-h-[calc(100vh-2.75rem)] h-full">
 			{!company.data ? (
