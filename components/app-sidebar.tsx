@@ -88,7 +88,7 @@ export function AppSidebar({ role }: Props) {
 								alt="DeepTrack logo"
 								width={120}
 								height={120}
-								className="mt-2"
+								className=""
 							/>
 						</SidebarGroupLabel>
 					</SidebarGroup>

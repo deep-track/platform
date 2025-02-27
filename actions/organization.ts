@@ -1,5 +1,6 @@
 "use server";
 
+import { BACKEND_URLS } from "@/lib/backend-utls";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -47,15 +48,15 @@ export async function createCompanyAction(props: CreateCompanyProps) {
 }
 
 export type CompanyWithMembers = {
-		id: string;
-		name: string;
-		email: string;
-		phone: string;
-		companyHeadId: string;
-		companyDomain: "finance" | "media";
-		createdAt: string;
-		updatedAt: string;
-	};
+	id: string;
+	name: string;
+	email: string;
+	phone: string;
+	companyHeadId: string;
+	companyDomain: "finance" | "media";
+	createdAt: string;
+	updatedAt: string;
+};
 
 export async function getCompanyAction() {
 	// 'use cache'
@@ -89,6 +90,44 @@ export async function getCompanyAction() {
 			data: data as CompanyWithMembers,
 			message: "Company Created Successfully",
 		};
+	} catch (error) {
+		throw new Error("Failed to fetch company");
+	}
+}
+
+export interface CompanyMember {
+	id: string;
+	companyId: string | null;
+	userId: string;
+	email: string;
+	role: "admin" | "user";
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export async function getCompanyMembersAction() {
+	const { userId } = await auth();
+
+	if (!userId) redirect("/sign-in");
+
+	try {
+		const response = await fetch(
+			`${BACKEND_URLS["Get All Company Members"]}/${userId}`,
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			},
+		);
+
+		if (!response.ok) {
+			throw new Error("Failed to fetch company members");
+		}
+
+		const data: CompanyMember[] = await response.json();
+
+		return data;
 	} catch (error) {
 		throw new Error("Failed to fetch company");
 	}

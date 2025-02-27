@@ -1,11 +1,17 @@
-import { getCompanyAction } from "@/actions/organization";
+import {
+	getCompanyAction,
+	getCompanyMembersAction,
+} from "@/actions/organization";
 import EmptyState from "@/components/empty-state";
 import CreateOrganizationDialog from "@/modules/organization/create-organization-form";
 import InviteStaffDialog from "@/modules/organization/invite-new-staff";
+import MembersTable from "@/modules/organization/tables/members-table";
 import React from "react";
 
 export default async function MembersPage() {
 	const company = await getCompanyAction();
+	const members = await getCompanyMembersAction();
+	console.log(members);
 	return (
 		<div className="p-4 min-h-[calc(100vh-2.75rem)] h-full">
 			{!company.data ? (
@@ -17,8 +23,11 @@ export default async function MembersPage() {
 					<CreateOrganizationDialog />
 				</div>
 			) : (
-				<div className="flex items-center justify-end">
-					<InviteStaffDialog companyId={company.data.id} />
+				<div className="space-y-4">
+					<div className="flex items-center justify-end">
+						<InviteStaffDialog companyId={company.data.id} />
+					</div>
+					<MembersTable data={members} />
 				</div>
 			)}
 		</div>

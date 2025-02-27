@@ -10,8 +10,7 @@ export default async function NewUser() {
 	if (!clerkUser) redirect("/sign-in");
 
 	const user = await findUserById(clerkUser.id);
-
-
+	
 
 	if (!user) {
 		await addNewUser(

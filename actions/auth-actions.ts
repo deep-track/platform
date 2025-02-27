@@ -47,7 +47,7 @@ export async function addNewUser(role: string, companyId?: string) {
 		);
 
 		const data = (await response.json()) as ResponseBody;
-		if (data.status !== 200) throw new Error(data.message);
+		if (data.status !== 201) throw new Error(data.message);
 
 		return data;
 	} catch (error) {
@@ -57,23 +57,20 @@ export async function addNewUser(role: string, companyId?: string) {
 }
 
 export async function findUserById(userId: string) {
-	try {
-		const response = await fetch(
-			`${process.env.DEEPTRACK_BACKEND_URL}/v1/users/find-by-clerk/${userId}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
+	const response = await fetch(
+		`${process.env.DEEPTRACK_BACKEND_URL}/v1/users/find-by-clerk/${userId}`,
+		{
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json",
 			},
-		);
+		},
+	);
 
-		const data = (await response.json()) as ResponseBody;
-		if (data.status !== 200) throw new Error(data.message);
-
-		return data.data;
-	} catch (error) {
-		console.error("Error finding user:", error);
-		return { status: 500, message: "Internal Server Error" };
+	const data = (await response.json()) as ResponseBody;
+	if (data.status !== 200) {
+		throw new Error(data.message);
 	}
+
+	return data.data;
 }
