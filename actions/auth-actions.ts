@@ -47,7 +47,7 @@ export async function addNewUser(role: string, companyId?: string) {
 		);
 
 		const data = (await response.json()) as ResponseBody;
-		if (data.status !== 200) throw new Error(data.message);
+		if (data.status !== 201) throw new Error(data.message);
 
 		return data;
 	} catch (error) {
