@@ -5,15 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Copy, Eye, EyeOff, Key, Plus, Loader2, MoreVertical } from "lucide-react"
+import { Copy, Eye, EyeOff, Key, Plus, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatDistanceToNow } from "date-fns"
 import toast, { Toaster } from "react-hot-toast"
 import { createApiKey, revokeApiKey, getApiKeys } from "@/lib/actions"
 import type { ApiKey } from "./page"
+import { useRouter } from "next/navigation"
 
 export default function ApiKeysUI({ initialApiKeys }: { initialApiKeys: ApiKey[] }) {
+    const router = useRouter();
     const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys)
     const [newKey, setNewKey] = useState<string>("")
     const [showKey, setShowKey] = useState(false)
@@ -22,8 +24,6 @@ export default function ApiKeysUI({ initialApiKeys }: { initialApiKeys: ApiKey[]
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
     const [keyToActOn, setKeyToActOn] = useState<string | null>(null);
-    const [actionType, setActionType] = useState<"revoke" | "delete" | null>(null);
-    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
 
     const handleCreateKey = async () => {
@@ -45,31 +45,19 @@ export default function ApiKeysUI({ initialApiKeys }: { initialApiKeys: ApiKey[]
         setLoading(false)
     }
 
-    const confirmAction = async () => {
-        if (keyToActOn && actionType) {
-            if (actionType === "revoke") {
-                const result = await revokeApiKey(keyToActOn);
-                if (result.success) {
-                    const updatedKeys = await getApiKeys();
-                    setApiKeys(updatedKeys);
-                    toast.success("API key revoked successfully");
-                } else {
-                    toast.error(result.error || "Failed to revoke API key");
-                }
+   const confirmAction = async () => {
+        if (keyToActOn) {
+            const result = await revokeApiKey(keyToActOn);
+            if (result.success) {
+                const updatedKeys = await getApiKeys();
+                setApiKeys(updatedKeys);
+                toast.success("API key revoked successfully");
+                router.refresh();
+            } else {
+                toast.error(result.error || "Failed to revoke API key");
             }
-            // else if (actionType === "delete") {
-            //     const result = await deleteApiKey(keyToActOn);
-            //     if (result.success) {
-            //         const updatedKeys = await getApiKeys();
-            //         setApiKeys(updatedKeys);
-            //         toast.success("API key deleted successfully");
-            //     } else {
-            //         toast.error(result.error || "Failed to delete API key");
-            //     }
-            // }
             setConfirmDialogOpen(false);
             setKeyToActOn(null);
-            setActionType(null);
         }
     };
 
@@ -187,31 +175,7 @@ export default function ApiKeysUI({ initialApiKeys }: { initialApiKeys: ApiKey[]
                     </DialogContent>
                 </Dialog>
             </div>
-
-            {/* Confirmation Dialog for both Revoke and Delete actions */}
-            <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            Confirm {actionType === "revoke" ? "Revoke" : "Delete"} API Key
-                        </DialogTitle>
-                        <DialogDescription>
-                            Are you sure you want to{" "}
-                            {actionType === "revoke" ? "revoke" : "delete"} this API key?
-                            This action cannot be undone.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="destructive" onClick={confirmAction}>
-                            {actionType === "revoke" ? "Revoke Key" : "Delete Key"}
-                        </Button>
-                        <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
+            
             <div className="rounded-lg border">
                 <Table>
                     <TableHeader className="bg-muted/50">
@@ -250,53 +214,45 @@ export default function ApiKeysUI({ initialApiKeys }: { initialApiKeys: ApiKey[]
                                         addSuffix: true,
                                     })}
                                 </TableCell>
-                                <TableCell className="relative text-right">
+                                <TableCell className="text-right">
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() =>
-                                            setOpenDropdownId(
-                                                openDropdownId === key.id.toString()
-                                                    ? null
-                                                    : key.id.toString()
-                                            )
-                                        }
-                                        className="h-8 w-8"
+                                        onClick={() => {
+                                            setKeyToActOn(key.id.toString());
+                                            setConfirmDialogOpen(true);
+                                        }}
+                                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
                                     >
-                                        <MoreVertical className="h-4 w-4" />
+                                        <Trash2 className="h-4 w-4" />
                                     </Button>
-                                    {openDropdownId === key.id.toString() && (
-                                        <div className="absolute right-0 mt-2 w-28 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                                            <button
-                                                onClick={() => {
-                                                    setActionType("revoke");
-                                                    setKeyToActOn(key.id.toString());
-                                                    setConfirmDialogOpen(true);
-                                                    setOpenDropdownId(null);
-                                                }}
-                                                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                Revoke
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setActionType("delete");
-                                                    setKeyToActOn(key.id.toString());
-                                                    setConfirmDialogOpen(true);
-                                                    setOpenDropdownId(null);
-                                                }}
-                                                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    )}
                                 </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
                 </Table>
             </div>
+
+            {/* TODO: IMPLEMENT LOADING FUNCTIONALITY*/}
+            <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Revoke API Key</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to revoke this API key?
+                            This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="destructive" onClick={confirmAction}>
+                            Revoke Key
+                        </Button>
+                        <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

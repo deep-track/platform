@@ -1,7 +1,6 @@
 "use server"
 
 import { findUserById } from "@/actions/auth-actions"
-import { getSession } from "@/lib/session"
 import { auth } from "@clerk/nextjs/server"
 import { revalidateTag } from "next/cache"
 import {redirect} from "next/navigation"
@@ -46,14 +45,25 @@ export async function createApiKey() {
 }
 
 export async function getApiKeys() {
-    const session = await getSession()
-    if (!session) return []
+     const { userId } = await auth();
+    if (!userId) return redirect("/sign-in");
 
     try {
+      const data = await findUserById(userId);
+
+        if (!data) {
+            throw new Error("User not found or invalid response");
+        }
+
+        const companyId = data.companyId;
+
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/users/api-keys/${session.user.id}`,
+            `${process.env.NEXT_PUBLIC_API_URL}/users/api-keys/${userId}/${companyId}`,
             {
-                headers: { Authorization: `Bearer ${session.accessToken}` },
+              method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
                 next: { tags: ['apikeys'] }
             }
         )
@@ -67,22 +77,35 @@ export async function getApiKeys() {
 }
 
 export async function revokeApiKey(apiKeyId: string) {
-  try {
-    const { userId } = await auth();
+   const { userId } = await auth();
+    if (!userId) return redirect("/sign-in");
 
-    if (!userId) throw new Error("User session not found")
+  try {
+
+     const data = await findUserById(userId);
+
+        if (!data) {
+            throw new Error("User not found or invalid response");
+        }
+
+        const companyId = data.companyId;
 
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000)
 
     const response = await fetch(
       // the apiKeyId is embedded directly in the URL.
-      `${process.env.NEXT_PUBLIC_API_URL}/users/${apiKeyId}/api-keys/revoke`,
+      `${process.env.NEXT_PUBLIC_API_URL}/users/api-keys/${apiKeyId}/revoke`,
       {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          userId: userId,
+          companyId: companyId,
+        }),
+
         signal: controller.signal,
       }
     )
