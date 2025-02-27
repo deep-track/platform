@@ -5,7 +5,6 @@ import Link from "next/link";
 
 export default async function KYCHero() {
 	const { userId } = await auth();
-	const href = userId ? "/dashboard" : "/new-user";
 
 	return (
 		<section className="w-full overflow-x-hidden min-h-screen">
@@ -18,13 +17,14 @@ export default async function KYCHero() {
 								KYC Reimagined: Performance, Intelligence, Convenience
 							</h1>
 							<p className="text-lg text-muted-foreground md:text-xl lg:pb-20">
-								Streamline your Know Your Customer process with our cutting-edge solution that combines speed, smart technology, and ease of use.
+								Streamline your Know Your Customer process with our cutting-edge
+								solution that combines speed, smart technology, and ease of use.
 							</p>
 							<Button
 								asChild
 								className="rounded-lg bg-black px-8 py-6 text-lg font-medium text-white hover:bg-gray-900 transition-colors w-full"
 							>
-								<Link href={href}>
+								<Link href="/new-user">
 									{userId ? "Go to Dashboard" : "Get Started"}
 								</Link>
 							</Button>
