@@ -198,7 +198,7 @@ const VerifyIdentityForm = () => {
       <div className="h-2 bg-gray-200 rounded-full relative">
         <div
           className="h-full bg-customTeal transform-gpu rounded-full transition-transform duration-500 ease-out"
-          style={{ transform: `scaleX(${(currentStep + 1) / STEPS.length})` }}
+          style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
         />
       </div>
       <div className="mt-4 flex justify-between text-sm text-gray-500">
