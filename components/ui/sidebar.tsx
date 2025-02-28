@@ -376,7 +376,7 @@ const SidebarFooter = React.forwardRef<
     <div
       ref={ref}
       data-sidebar="footer"
-      className={cn("flex flex-col gap-2 p-2 bg-black", className)}
+      className={cn("flex flex-col gap-2 p-2 bg-[#25282A]", className)}
       {...props}
     />
   )
@@ -391,7 +391,7 @@ const SidebarSeparator = React.forwardRef<
     <Separator
       ref={ref}
       data-sidebar="separator"
-      className={cn("mx-2 w-auto bg-sidebar-primary-border", className)}
+      className={cn("mx-2 w-auto bg-gray-500", className)}
       {...props}
     />
   )

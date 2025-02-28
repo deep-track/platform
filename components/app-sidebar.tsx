@@ -11,10 +11,10 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { TypographyP, TypographySmall } from "@/components/ui/typography";
 import {
-	Book,
 	Database,
 	Home,
 	Key,
@@ -29,13 +29,6 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import { Toaster } from "react-hot-toast";
 
-const externalItems = [
-	{
-		title: "Docs",
-		url: "https://deeptrack.ai/docs",
-		icon: Book,
-	},
-];
 
 const getItems = (role: "user" | "admin") => {
 	const baseItems = [
@@ -82,30 +75,28 @@ export function AppSidebar({ role }: Props) {
 			<Sidebar>
 				<SidebarContent>
 					<SidebarGroup>
-						<SidebarGroupLabel className="px-4 py-2">
+						<SidebarGroupLabel>
 							<Image
 								src="/deeptrack-logo.png"
 								alt="DeepTrack logo"
 								width={120}
 								height={120}
 								className=""
+								priority
 							/>
 						</SidebarGroupLabel>
 					</SidebarGroup>
-
+					<SidebarSeparator />
 					<SidebarGroup>
-						<SidebarGroupLabel className="px-4 py-2">
-							<TypographySmall>Overview</TypographySmall>
-						</SidebarGroupLabel>
 						<SidebarMenu className="px-4">
 							{getItems(role).map((item) => (
 								<SidebarMenuItem key={item.title}>
 									<SidebarMenuButton tooltip={item.title} asChild>
 										<Link
 											href={item.url}
-											className={`flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-black/90 hover:text-white transition-colors ${
 												pathname === item.url
-													? "bg-accent text-accent-foreground"
+													? "bg-black/90 text-white"
 													: ""
 											}`}
 										>
@@ -122,19 +113,20 @@ export function AppSidebar({ role }: Props) {
 				</SidebarContent>
 
 				<SidebarFooter>
-					<Card className="m-4 p-4">
+					<Card className="m-4 p-4 bg-black text-white border-none">
 						<Image
 							src="/deeptrack-logo.png"
 							alt="DeepTrack logo"
-							width={80}
+							width={120}
 							height={80}
 							className="mb-2"
+							priority
 						/>
 						<TypographyP className="font-bold">Need help?</TypographyP>
 						<TypographyP>Please check our docs</TypographyP>
-						<Button asChild variant="outline" className="w-full mt-2">
+						<Button asChild variant="secondary" className="w-full mt-2 text-black hover:bg-customTeal/90">
 							<a
-								href="https://deeptrack.ai/docs"
+								href="https://docs.deeptrack.io"
 								target="_blank"
 								rel="noopener noreferrer"
 							>
