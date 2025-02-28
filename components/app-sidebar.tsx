@@ -81,7 +81,7 @@ export function AppSidebar({ role }: Props) {
 								alt="DeepTrack logo"
 								width={120}
 								height={120}
-								className=""
+								className="px-2 py-2 mt-2"
 								priority
 							/>
 						</SidebarGroupLabel>
@@ -123,7 +123,7 @@ export function AppSidebar({ role }: Props) {
 							priority
 						/>
 						<TypographyP className="font-bold">Need help?</TypographyP>
-						<TypographyP>Please check our docs</TypographyP>
+						<TypographySmall>Please check our docs</TypographySmall>
 						<Button asChild variant="secondary" className="w-full mt-2 text-black hover:bg-customTeal/90">
 							<a
 								href="https://docs.deeptrack.io"
