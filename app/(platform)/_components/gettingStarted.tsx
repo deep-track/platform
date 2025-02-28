@@ -1,39 +1,42 @@
-import Image from "next/image";
-import Link from "next/link";
-import { JSX, ReactNode } from "react";
+"use client"
 
-interface ActionButtonProps {
-    text: string;
-    href: string;
-    className?: string;
-}
+import Image from "next/image";
+import { JSX, ReactNode, useState } from "react";
+import VerificationDialog from "./verification-dialog";
+
 
 interface BannerProps {
     title: string;
     description: string;
     buttonText: string;
-    buttonHref: string;
+    onButtonClick: () => void;
     imageSrc?: string;
     decorationSrc?: string;
 }
 
+interface ActionButtonProps {
+    text: string;
+    onClick: () => void; 
+    className?: string;
+}
+
 export const ActionButton = ({
     text,
-    href,
+    onClick,
     className = ""
 }: ActionButtonProps): JSX.Element => (
-    <Link href={href}>
-        <button className={`bg-white hover:bg-customTeal/90 text-black font-bold py-2 px-4 md:py-2 md:px-6 rounded uppercase tracking-wide transition-colors text-sm md:text-base ${className}`}>
+        <button
+        onClick={onClick}
+        className={`bg-white hover:bg-customTeal/90 text-black font-bold py-2 px-4 md:py-2 md:px-6 rounded uppercase tracking-wide transition-colors text-sm md:text-base ${className}`}>
             {text}
         </button>
-    </Link>
 );
 
 export const Banner = ({
     title,
     description,
     buttonText,
-    buttonHref,
+    onButtonClick,
     imageSrc = "/banner-img.png",
     decorationSrc = "/banner-img-01.png"
 }: BannerProps): JSX.Element => {
@@ -47,7 +50,11 @@ export const Banner = ({
                     <p className="text-gray-400 leading-relaxed text-base md:text-lg">
                         {description}
                     </p>
-                    <ActionButton className="mt-4 md:mt-6" text={buttonText} href={buttonHref} />
+                    <ActionButton
+                    className="mt-4 md:mt-6"
+                    text={buttonText}
+                    onClick={onButtonClick}
+                    />
                 </div>
                 <div className="relative flex justify-center lg:justify-end items-center order-first lg:order-last">
                     <div className="relative w-[160px] h-[160px] md:w-[200px] md:h-[200px] lg:w-[320px] lg:h-[220px]">
@@ -83,12 +90,21 @@ interface PageProps {
 
 // Example usage in a page component
 export default function GettingStarted({ }: PageProps): JSX.Element {
+
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
     return (
-        <Banner
-            title="Get started"
-            description="Ensure the validity of individuals' documents, tax status, images, and online reputation to maintain proper compliance and prevent money laundering."
-            buttonText="CONDUCT VERIFICATION"
-            buttonHref="/verify-id"
-        />
+        <>
+            <Banner
+                title="Get started"
+                description="Ensure the validity of individuals' documents, tax status, images, and online reputation to maintain proper compliance and prevent money laundering."
+                buttonText="CONDUCT VERIFICATION"
+                onButtonClick={() => setIsDialogOpen(true)}
+            />
+            <VerificationDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+            />
+        </>
     );
 }
