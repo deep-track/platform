@@ -1,14 +1,16 @@
 'use client'
 
 import { useState } from "react";
-import { ChevronLeft, Camera, Upload, FileText, CreditCard, Loader2, Check } from "lucide-react";
+import { ChevronLeft, Camera, Upload, Loader2, Check } from "lucide-react";
+import { FaIdCard, FaRegIdCard, FaPassport } from "react-icons/fa";
 import VerificationResults from "./verificationResults";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { toast } from "sonner"
 import FileUpload from "@/components/file-upload";
+import { Checkbox } from "@/components/ui/checkbox";
+import toast, { Toaster } from "react-hot-toast";
 
-type DocumentType = "id-card" | "drivers-license" | "passport";
+type DocumentType = "id-card" | "drivers-license" | "passport" | "disability-certificate" | "kra-pin-certificate";
 
 interface Step {
   title: string;
@@ -64,7 +66,7 @@ const VerifyIdentityForm = () => {
   const [verificationComplete, setVerificationComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [verificationResults, setVerificationResults] = useState<VerificationResponse | null>(null);
-
+  
   // State to store uploaded image URLs
   const [uploadedImages, setUploadedImages] = useState({
     face_Image: "",
@@ -197,7 +199,7 @@ const VerifyIdentityForm = () => {
     <div className="w-full mb-8">
       <div className="h-2 bg-gray-200 rounded-full relative">
         <div
-          className="h-full bg-customTeal transform-gpu rounded-full transition-transform duration-500 ease-out"
+          className="h-full bg-[#00494c] transform-gpu rounded-full transition-transform duration-500 ease-out"
           style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
         />
       </div>
@@ -214,25 +216,25 @@ const VerifyIdentityForm = () => {
       <p className="text-gray-500 mb-6">Choose a valid government-issued document</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div
-          className={`relative p-6 border rounded-lg transition-all duration-300 hover:border-customTeal hover:shadow-md cursor-pointer ${selectedDocument === "id-card" ? "border-customTeal shadow-md" : ""}`}
+          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "id-card" ? "border-4 border-[#00494c] shadow-md" : ""}`}
           onClick={() => handleDocumentSelect("id-card")}
         >
-          <CreditCard className="w-6 h-6 text-customTeal mb-2" />
-          <h3 className="font-medium">Government-Issued ID Card</h3>
+          <FaIdCard className="w-6 h-6 text-[#00494c] mb-2" />
+          <h3 className={`${selectedDocument === "id-card" ? "font-bold" : "font-normal"}`}>Government-Issued ID Card</h3>
         </div>
         <div
-          className={`relative p-6 border rounded-lg transition-all duration-300 hover:border-customTeal hover:shadow-md cursor-pointer ${selectedDocument === "drivers-license" ? "border-customTeal shadow-md" : ""}`}
+          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "drivers-license" ? "border-4 border-[#00494c] shadow-md" : ""}`}
           onClick={() => handleDocumentSelect("drivers-license")}
         >
-          <FileText className="w-6 h-6 text-customTeal mb-2" />
-          <h3 className="font-medium">Driver's License</h3>
+          <FaRegIdCard className="w-6 h-6 text-[#00494c] mb-2" />
+          <h3 className={`${selectedDocument === "drivers-license" ? "font-bold" : "font-normal"}`}>Driver&apos;s License</h3>
         </div>
         <div
-          className={`relative p-6 border rounded-lg transition-all duration-300 hover:border-customTeal hover:shadow-md cursor-pointer ${selectedDocument === "passport" ? "border-customTeal shadow-md" : ""}`}
+          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "passport" ? "border-4 border-[#00494c] shadow-md" : ""}`}
           onClick={() => handleDocumentSelect("passport")}
         >
-          <FileText className="w-6 h-6 text-customTeal mb-2" />
-          <h3 className="font-medium">Passport</h3>
+          <FaPassport className="w-6 h-6 text-[#00494c] mb-2" />
+          <h3 className={`${selectedDocument === "passport" ? "font-bold" : "font-normal"}`}>Passport</h3>
         </div>
       </div>
     </div>
@@ -245,7 +247,7 @@ const VerifyIdentityForm = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="upload-area flex flex-col items-center overflow-hidden justify-center text-center p-4 border rounded-lg">
-          <Camera className="w-8 h-8 text-customTeal mb-2" />
+          <Camera className="w-8 h-8 text-[#00494c] mb-2" />
           <p className="font-medium">Face Image</p>
           <p className="text-sm text-gray-500 mt-1">Clear and Lively</p>
           <div className="mt-2 w-full">
@@ -258,7 +260,7 @@ const VerifyIdentityForm = () => {
           )}
         </div>
         <div className="upload-area flex flex-col items-center overflow-hidden justify-center text-center p-4 border rounded-lg">
-          <Upload className="w-8 h-8 text-customTeal mb-2" />
+          <Upload className="w-8 h-8 text-[#00494c] mb-2" />
           <p className="font-medium">Front Side</p>
           <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
           <div className="mt-2 w-full">
@@ -271,7 +273,7 @@ const VerifyIdentityForm = () => {
           )}
         </div>
         <div className="upload-area flex flex-col overflow-hidden p-4 items-center justify-center text-center border rounded-lg">
-          <Upload className="w-8 h-8 text-customTeal mb-2" />
+          <Upload className="w-8 h-8 text-[#00494c] mb-2" />
           <p className="font-medium">Back Side</p>
           <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
           <div className="mt-2 w-full">
@@ -291,7 +293,7 @@ const VerifyIdentityForm = () => {
     <div className="text-center py-12 flex flex-col items-center justify-center">
       {isLoading ? (
         <>
-          <Loader2 className="w-12 h-12 text-customTeal animate-spin mb-4" />
+          <Loader2 className="w-12 h-12 text-[#00494c] animate-spin mb-4" />
           <h2 className="text-xl font-semibold">Verification in Progress</h2>
           <p className="text-gray-500 mt-2">Please wait while we verify your documents</p>
         </>
@@ -305,8 +307,10 @@ const VerifyIdentityForm = () => {
   );
 
   return (
+    <>
+    <Toaster />
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <Card className="w-full max-w-3xl p-6 space-y-6">
+      <Card className="w-full max-w-4xl p-6 space-y-6">
         <div className="flex items-center">
           {currentStep > 0 && (
             <Button
@@ -332,28 +336,39 @@ const VerifyIdentityForm = () => {
           </div>
           <div className="mt-8 flex flex-col space-y-4">
             <Button
-              className={`w-full ${!(currentStep === 0 && !selectedDocument) ? "bg-customTeal hover:bg-customTeal/90" : ""}`}
+              className={`w-full ${!(currentStep === 0 && !selectedDocument) ? "bg-[#00494c] hover:bg-[#00494c]/90" : ""}`}
               onClick={handleNext}
               disabled={(currentStep === 0 && !selectedDocument) || !areAllImagesUploaded() || isLoading}
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
               ) : currentStep === STEPS.length - 1 ? (
-                "Complete Verification"
+              "Complete Verification"
               ) : (
-                "Continue"
+              <div>
+                <span className="block md:hidden">Continue</span>
+                <span className="hidden md:block">Save and proceed to upload document</span>
+              </div>
               )}
             </Button>
-            <p className="text-xs text-center text-gray-500">
-              This information is used for personal verification only and user data is kept private and confidential.
-            </p>
+            <div className="flex items-center justify-center">
+              <Checkbox
+              id="confirmSelection"
+              className="mr-2"
+              required
+              />
+              <label htmlFor="confirmSelection" className="text-xs text-gray-500">
+                This information is used for personal verification only, and user dater not saved kept private and confidential by Deeptrack.
+              </label>
+            </div>
           </div>
         </div>
       </Card>
     </div>
+    </>
   );
 };
 
