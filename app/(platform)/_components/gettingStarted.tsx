@@ -1,45 +1,94 @@
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import Image from "next/image";
+import Link from "next/link";
+import { JSX, ReactNode } from "react";
 
-export default function GettingStarted() {
+interface ActionButtonProps {
+    text: string;
+    href: string;
+    className?: string;
+}
+
+interface BannerProps {
+    title: string;
+    description: string;
+    buttonText: string;
+    buttonHref: string;
+    imageSrc?: string;
+    decorationSrc?: string;
+}
+
+export const ActionButton = ({
+    text,
+    href,
+    className = ""
+}: ActionButtonProps): JSX.Element => (
+    <Link href={href}>
+        <button className={`bg-white hover:bg-customTeal/90 text-black font-bold py-2 px-4 md:py-2 md:px-6 rounded uppercase tracking-wide transition-colors text-sm md:text-base ${className}`}>
+            {text}
+        </button>
+    </Link>
+);
+
+export const Banner = ({
+    title,
+    description,
+    buttonText,
+    buttonHref,
+    imageSrc = "/banner-img.png",
+    decorationSrc = "/banner-img-01.png"
+}: BannerProps): JSX.Element => {
     return (
-        <div className="bg-black rounded-xl text-white p-8 lg:p-4 min-h-[200px]">
-            <div className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center">
-                <div className="space-y-4">
-                    <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Get started</h2>
-                    <p className="text-sm text-gray-400 max-w-md">
-                        Ensure the validity of individuals&apos; documents, tax status, images, and online reputation to maintain
-                        proper compliance.
+        <div className="bg-black rounded-xl text-white px-4 lg:px-6 min-h-[300px] md:min-h-[250px] w-full max-w-[1640px] mx-auto">
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-16 items-center py-6">
+                <div className="space-y-3 md:space-y-4">
+                    <h2 className="text-xl md:text-3xl lg:text-2xl font-bold tracking-tight">
+                        {title}
+                    </h2>
+                    <p className="text-gray-400 leading-relaxed text-base md:text-lg">
+                        {description}
                     </p>
-                    <Link href={'/verify-id'}>
-                    <Button className="bg-white hover:bg-customTeal text-black px-4 py-2 rounded-md font-semibold">
-                        VERIFY IDENTITY
-                    </Button>
-                    </Link>
+                    <ActionButton className="mt-4 md:mt-6" text={buttonText} href={buttonHref} />
                 </div>
-
-                <div className="relative flex justify-end items-center">
-                    <div className="relative w-[150px] h-[150px]">
+                <div className="relative flex justify-center lg:justify-end items-center order-first lg:order-last">
+                    <div className="relative w-[160px] h-[160px] md:w-[200px] md:h-[200px] lg:w-[320px] lg:h-[220px]">
                         <Image
-                            src="/banner-img.png"
-                            alt="Person with laptop"
+                            src={imageSrc}
+                            alt="Banner image"
                             fill
-                            className="object-contain drop-shadow-lg z-10"
+                            className="object-cover drop-shadow-lg z-10"
                             priority
+                            sizes="(max-width: 768px) 160px, 200px"
                         />
                     </div>
-                    <div className="absolute w-[80px] h-[80px] -right-4 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute w-[80px] h-[80px] md:w-[100px] md:h-[100px] right-0 md:-right-4 top-1/2 transform -translate-y-1/2">
                         <Image
-                            src="/banner-img-01.png"
-                            alt="decorations"
+                            src={decorationSrc}
+                            alt="Decorative element"
                             fill
-                            className="object-contain opacity-40 animate-pulse"
+                            className="object-cover opacity-80 animate-pulse"
                             priority
+                            sizes="(max-width: 768px) 80px, 100px"
                         />
                     </div>
                 </div>
             </div>
         </div>
-    )
+    );
+};
+
+// Page component type
+interface PageProps {
+    children?: ReactNode;
+}
+
+// Example usage in a page component
+export default function GettingStarted({ }: PageProps): JSX.Element {
+    return (
+        <Banner
+            title="Get started"
+            description="Ensure the validity of individuals' documents, tax status, images, and online reputation to maintain proper compliance and prevent money laundering."
+            buttonText="CONDUCT VERIFICATION"
+            buttonHref="/verify-id"
+        />
+    );
 }
