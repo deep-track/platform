@@ -246,43 +246,78 @@ const VerifyIdentityForm = () => {
       <p className="text-gray-500">Please upload clear photos of your documents</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="upload-area flex flex-col items-center overflow-hidden justify-center text-center p-4 border rounded-lg">
-          <Camera className="w-8 h-8 text-[#00494c] mb-2" />
-          <p className="font-medium">Face Image</p>
-          <p className="text-sm text-gray-500 mt-1">Clear and Lively</p>
-          <div className="mt-2 w-full">
-            <FileUpload endpoint="imageUploader" onChange={handleFaceImageUpload} />
-          </div>
-          {uploadedImages.face_Image && (
-            <div className="mt-2 text-green-600 text-sm flex items-center">
-              <Check className="w-4 h-4 mr-1" /> Uploaded
-            </div>
+        {/* Face Image Upload */}
+        <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+          {uploadedImages.face_Image ? (
+            <>
+              <img
+                src={uploadedImages.face_Image}
+                alt="Face Preview"
+                className="w-full h-full object-cover rounded-lg"
+              />
+              <div className="text-green-600 text-sm flex items-center justify-center mt-2">
+                <Check className="w-4 h-4 mr-1" /> Uploaded
+              </div>
+            </>
+          ) : (
+            <>
+              <Camera className="w-8 h-8 text-[#00494c] mb-2" />
+              <p className="font-medium">Face Image</p>
+              <p className="text-sm text-gray-500 mt-1">Clear and Lively</p>
+              <div className="mt-2 w-full">
+                <FileUpload endpoint="imageUploader" onChange={handleFaceImageUpload} />
+              </div>
+            </>
           )}
         </div>
-        <div className="upload-area flex flex-col items-center overflow-hidden justify-center text-center p-4 border rounded-lg">
-          <Upload className="w-8 h-8 text-[#00494c] mb-2" />
-          <p className="font-medium">Front Side</p>
-          <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
-          <div className="mt-2 w-full">
-            <FileUpload endpoint="imageUploader" onChange={handleFrontImageUpload} />
-          </div>
-          {uploadedImages.front_id_Image && (
-            <div className="mt-2 text-green-600 text-sm flex items-center">
-              <Check className="w-4 h-4 mr-1" /> Uploaded
-            </div>
+
+        {/* Front ID Upload */}
+        <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+          {uploadedImages.front_id_Image ? (
+            <>
+              <img
+                src={uploadedImages.front_id_Image}
+                alt="Front ID Preview"
+                className="w-full h-full object-cover rounded-lg"
+              />
+              <div className="text-green-600 text-sm flex items-center justify-center mt-2">
+                <Check className="w-4 h-4 mr-1" /> Uploaded
+              </div>
+            </>
+          ) : (
+            <>
+              <Upload className="w-8 h-8 text-[#00494c] mb-2" />
+              <p className="font-medium">Front Side</p>
+              <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
+              <div className="mt-2 w-full">
+                <FileUpload endpoint="imageUploader" onChange={handleFrontImageUpload} />
+              </div>
+            </>
           )}
         </div>
-        <div className="upload-area flex flex-col overflow-hidden p-4 items-center justify-center text-center border rounded-lg">
-          <Upload className="w-8 h-8 text-[#00494c] mb-2" />
-          <p className="font-medium">Back Side</p>
-          <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
-          <div className="mt-2 w-full">
-            <FileUpload endpoint="imageUploader" onChange={handleBackImageUpload} />
-          </div>
-          {uploadedImages.back_id_Image && (
-            <div className="mt-2 text-green-600 text-sm flex items-center">
-              <Check className="w-4 h-4 mr-1" /> Uploaded
-            </div>
+
+        {/* Back ID Upload */}
+        <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+          {uploadedImages.back_id_Image ? (
+            <>
+              <img
+                src={uploadedImages.back_id_Image}
+                alt="Back ID Preview"
+                className="w-full h-full object-cover rounded-lg"
+              />
+              <div className="text-green-600 text-sm flex items-center justify-center mt-2">
+                <Check className="w-4 h-4 mr-1" /> Uploaded
+              </div>
+            </>
+          ) : (
+            <>
+              <Upload className="w-8 h-8 text-[#00494c] mb-2" />
+              <p className="font-medium">Back Side</p>
+              <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
+              <div className="mt-2 w-full">
+                <FileUpload endpoint="imageUploader" onChange={handleBackImageUpload} />
+              </div>
+            </>
           )}
         </div>
       </div>
