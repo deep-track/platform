@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import FileUpload from "@/components/file-upload";
 import { Checkbox } from "@/components/ui/checkbox";
 import toast, { Toaster } from "react-hot-toast";
+import MultiStepVerificationLoader from "./multistepLoader";
 
 type DocumentType = "id-card" | "drivers-license" | "passport" | "disability-certificate" | "kra-pin-certificate";
 
@@ -510,11 +511,7 @@ const VerifyIdentityForm = () => {
   const VerificationInProgress = () => (
     <div className="text-center py-12 flex flex-col items-center justify-center">
       {isLoading ? (
-        <>
-          <Loader2 className="w-12 h-12 text-[#00494c] animate-spin mb-4" />
-          <h2 className="text-xl font-semibold">Verification in Progress</h2>
-          <p className="text-gray-500 mt-2">Please wait while we verify your documents</p>
-        </>
+        <MultiStepVerificationLoader />
       ) : (
         <>
           <h2 className="text-xl font-semibold">Ready to Verify</h2>
@@ -550,7 +547,7 @@ const VerifyIdentityForm = () => {
           <div className="flex-1">
             {currentStep === 0 && <DocumentSelection />}
             {currentStep === 1 && <DocumentUpload />}
-            {currentStep === 2 && <VerificationInProgress />}
+              {currentStep === 2 && <VerificationInProgress />}
           </div>
           <div className="mt-8 flex flex-col space-y-4">
             <Button
