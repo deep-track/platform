@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react";
-import { ChevronLeft, Camera, Upload, Loader2, Check } from "lucide-react";
+import { ChevronLeft, Camera, Upload, Loader2, Check, X, RefreshCw } from "lucide-react";
 import { FaIdCard, FaRegIdCard, FaPassport } from "react-icons/fa";
 import VerificationResults from "./verificationResults";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,15 @@ type DocumentType = "id-card" | "drivers-license" | "passport" | "disability-cer
 interface Step {
   title: string;
   description: string;
+}
+
+interface UploadProgressProps {
+  progress: number;
+  fileName?: string;
+  onCancel: () => void;
+  onRetry: () => void;
+  isUploading: boolean;
+  isError: boolean;
 }
 
 // Define the verification response interface
@@ -66,6 +75,82 @@ const VerifyIdentityForm = () => {
   const [verificationComplete, setVerificationComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [verificationResults, setVerificationResults] = useState<VerificationResponse | null>(null);
+
+  const [uploadStatus, setUploadStatus] = useState({
+    face: { progress: 0, isUploading: false, isError: false, fileName: "Face Image" },
+    frontId: { progress: 0, isUploading: false, isError: false, fileName: "Front ID" },
+    backId: { progress: 0, isUploading: false, isError: false, fileName: "Back ID" }
+  });
+
+  // Functions to handle upload actions
+  const handleUploadProgress = (type: 'face' | 'frontId' | 'backId', progress: number) => {
+    setUploadStatus(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        progress,
+        isUploading: progress < 100 && progress > 0,
+        isError: false
+      }
+    }));
+  };
+
+  const handleUploadError = (type: 'face' | 'frontId' | 'backId') => {
+    setUploadStatus(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        isUploading: false,
+        isError: true
+      }
+    }));
+  };
+
+  const handleUploadCancel = (type: 'face' | 'frontId' | 'backId') => {
+    // Logic to cancel the upload - this would interact with your upload library
+    // For now, we'll just reset the progress
+    setUploadStatus(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        progress: 0,
+        isUploading: false,
+        isError: false
+      }
+    }));
+
+    // If there's an active upload, you would need to cancel it
+    // This depends on what upload library you're using
+    // For example: uploadCancelTokenSource.cancel();
+
+    toast.error(`${uploadStatus[type].fileName} upload canceled`);
+  };
+
+  const handleUploadRetry = (type: 'face' | 'frontId' | 'backId') => {
+    // Reset the error state and prepare for a new upload
+    setUploadStatus(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        progress: 0,
+        isUploading: false,
+        isError: false
+      }
+    }));
+
+    // Logic to retry the upload would go here
+    // This would typically trigger the file selection dialog again
+    toast(`Please select ${uploadStatus[type].fileName} again to retry`);
+
+    // Clear the corresponding uploaded image to allow re-upload
+    if (type === 'face') {
+      setUploadedImages(prev => ({ ...prev, face_Image: "" }));
+    } else if (type === 'frontId') {
+      setUploadedImages(prev => ({ ...prev, front_id_Image: "" }));
+    } else if (type === 'backId') {
+      setUploadedImages(prev => ({ ...prev, back_id_Image: "" }));
+    }
+  };
   
   // State to store uploaded image URLs
   const [uploadedImages, setUploadedImages] = useState({
@@ -240,89 +325,187 @@ const VerifyIdentityForm = () => {
     </div>
   );
 
-  const DocumentUpload = () => (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Upload Documents</h2>
-      <p className="text-gray-500">Please upload clear photos of your documents</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Face Image Upload */}
-        <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
-          {uploadedImages.face_Image ? (
-            <>
-              <img
-                src={uploadedImages.face_Image}
-                alt="Face Preview"
-                className="w-full h-full object-cover rounded-lg"
-              />
-              <div className="text-green-600 text-sm flex items-center justify-center mt-2">
-                <Check className="w-4 h-4 mr-1" /> Uploaded
-              </div>
-            </>
-          ) : (
-            <>
-              <Camera className="w-8 h-8 text-[#00494c] mb-2" />
-              <p className="font-medium">Face Image</p>
-              <p className="text-sm text-gray-500 mt-1">Clear and Lively</p>
-              <div className="mt-2 w-full">
-                <FileUpload endpoint="imageUploader" onChange={handleFaceImageUpload} />
-              </div>
-            </>
-          )}
+  const UploadProgress = ({
+    progress = 0,
+    fileName = "File",
+    onCancel,
+    onRetry,
+    isUploading = false,
+    isError = false
+  }: UploadProgressProps) => {
+    return (
+      <div className="w-full my-6">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-sm text-gray-600">{fileName}</span>
+          <div className="flex items-center">
+            <span className="text-sm text-gray-600 mr-2">{Math.round(progress)}%</span>
+            {isUploading && (
+              <button
+                onClick={onCancel}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Cancel upload"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            )}
+            {isError && (
+              <button
+                onClick={onRetry}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Retry upload"
+              >
+                <RefreshCw className="w-4 h-4 text-gray-600" />
+              </button>
+            )}
+          </div>
         </div>
-
-        {/* Front ID Upload */}
-        <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
-          {uploadedImages.front_id_Image ? (
-            <>
-              <img
-                src={uploadedImages.front_id_Image}
-                alt="Front ID Preview"
-                className="w-full h-full object-cover rounded-lg"
-              />
-              <div className="text-green-600 text-sm flex items-center justify-center mt-2">
-                <Check className="w-4 h-4 mr-1" /> Uploaded
-              </div>
-            </>
-          ) : (
-            <>
-              <Upload className="w-8 h-8 text-[#00494c] mb-2" />
-              <p className="font-medium">Front Side</p>
-              <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
-              <div className="mt-2 w-full">
-                <FileUpload endpoint="imageUploader" onChange={handleFrontImageUpload} />
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Back ID Upload */}
-        <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
-          {uploadedImages.back_id_Image ? (
-            <>
-              <img
-                src={uploadedImages.back_id_Image}
-                alt="Back ID Preview"
-                className="w-full h-full object-cover rounded-lg"
-              />
-              <div className="text-green-600 text-sm flex items-center justify-center mt-2">
-                <Check className="w-4 h-4 mr-1" /> Uploaded
-              </div>
-            </>
-          ) : (
-            <>
-              <Upload className="w-8 h-8 text-[#00494c] mb-2" />
-              <p className="font-medium">Back Side</p>
-              <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
-              <div className="mt-2 w-full">
-                <FileUpload endpoint="imageUploader" onChange={handleBackImageUpload} />
-              </div>
-            </>
-          )}
+        <div className="h-2 bg-gray-200 rounded-full relative">
+          <div
+            className={`h-full ${isError ? 'bg-red-500' : 'bg-[#00BCD4]'} transform-gpu rounded-full transition-all duration-500 ease-out`}
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  const DocumentUpload = () => {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-xl font-semibold">Upload Documents</h2>
+        <p className="text-gray-500">Please upload clear photos of your documents</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Face Image Upload */}
+          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+            {uploadedImages.face_Image ? (
+              <>
+                <img
+                  src={uploadedImages.face_Image}
+                  alt="Face Preview"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+                <div className="text-green-600 text-sm flex items-center justify-center mt-2">
+                  <Check className="w-4 h-4 mr-1" /> Uploaded
+                </div>
+              </>
+            ) : (
+              <>
+                <Camera className="w-8 h-8 text-[#00494c] mb-2" />
+                <p className="font-medium">Face Image</p>
+                <p className="text-sm text-gray-500 mt-1">Clear and Lively</p>
+                <div className="mt-2 w-full">
+                  <FileUpload
+                    endpoint="imageUploader"
+                    onChange={handleFaceImageUpload}
+                    onProgress={(progress) => handleUploadProgress('face', progress)}
+                    onError={() => handleUploadError('face')}
+                    disabled={uploadStatus.face.isUploading}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Front ID Upload */}
+          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+            {uploadedImages.front_id_Image ? (
+              <>
+                <img
+                  src={uploadedImages.front_id_Image}
+                  alt="Front ID Preview"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+                <div className="text-green-600 text-sm flex items-center justify-center mt-2">
+                  <Check className="w-4 h-4 mr-1" /> Uploaded
+                </div>
+              </>
+            ) : (
+              <>
+                <Upload className="w-8 h-8 text-[#00494c] mb-2" />
+                <p className="font-medium">Front Side</p>
+                <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
+                <div className="mt-2 w-full">
+                  <FileUpload
+                    endpoint="imageUploader"
+                    onChange={handleFrontImageUpload}
+                    onProgress={(progress) => handleUploadProgress('frontId', progress)}
+                    onError={() => handleUploadError('frontId')}
+                    disabled={uploadStatus.frontId.isUploading}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Back ID Upload */}
+          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+            {uploadedImages.back_id_Image ? (
+              <>
+                <img
+                  src={uploadedImages.back_id_Image}
+                  alt="Back ID Preview"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+                <div className="text-green-600 text-sm flex items-center justify-center mt-2">
+                  <Check className="w-4 h-4 mr-1" /> Uploaded
+                </div>
+              </>
+            ) : (
+              <>
+                <Upload className="w-8 h-8 text-[#00494c] mb-2" />
+                <p className="font-medium">Back Side</p>
+                <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
+                <div className="mt-2 w-full">
+                  <FileUpload
+                    endpoint="imageUploader"
+                    onChange={handleBackImageUpload}
+                    onProgress={(progress) => handleUploadProgress('backId', progress)}
+                    onError={() => handleUploadError('backId')}
+                    disabled={uploadStatus.backId.isUploading}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Add progress bars for each upload that's in progress or has error */}
+        {(uploadStatus.face.isUploading || uploadStatus.face.isError) && (
+          <UploadProgress
+            progress={uploadStatus.face.progress}
+            fileName={uploadStatus.face.fileName}
+            onCancel={() => handleUploadCancel('face')}
+            onRetry={() => handleUploadRetry('face')}
+            isUploading={uploadStatus.face.isUploading}
+            isError={uploadStatus.face.isError}
+          />
+        )}
+
+        {(uploadStatus.frontId.isUploading || uploadStatus.frontId.isError) && (
+          <UploadProgress
+            progress={uploadStatus.frontId.progress}
+            fileName={uploadStatus.frontId.fileName}
+            onCancel={() => handleUploadCancel('frontId')}
+            onRetry={() => handleUploadRetry('frontId')}
+            isUploading={uploadStatus.frontId.isUploading}
+            isError={uploadStatus.frontId.isError}
+          />
+        )}
+
+        {(uploadStatus.backId.isUploading || uploadStatus.backId.isError) && (
+          <UploadProgress
+            progress={uploadStatus.backId.progress}
+            fileName={uploadStatus.backId.fileName}
+            onCancel={() => handleUploadCancel('backId')}
+            onRetry={() => handleUploadRetry('backId')}
+            isUploading={uploadStatus.backId.isUploading}
+            isError={uploadStatus.backId.isError}
+          />
+        )}
+      </div>
+    );
+  };
 
   const VerificationInProgress = () => (
     <div className="text-center py-12 flex flex-col items-center justify-center">
