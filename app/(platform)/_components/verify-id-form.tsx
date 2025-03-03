@@ -287,7 +287,7 @@ const VerifyIdentityForm = () => {
     <div className="w-full mb-8">
       <div className="h-2 bg-gray-200 rounded-full relative">
         <div
-          className="h-full bg-[#00494c] transform-gpu rounded-full transition-transform duration-500 ease-out"
+          className="h-full bg-[#14B4BC] transform-gpu rounded-full transition-transform duration-500 ease-out"
           style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
         />
       </div>
