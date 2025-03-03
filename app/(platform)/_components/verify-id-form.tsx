@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import toast, { Toaster } from "react-hot-toast";
 import MultiStepVerificationLoader from "./multistepLoader";
 import { verifyIdentityServerSide } from "@/lib/actions";
+import DocumentConfirmationDialog from "./documentConfirmation";
 
 type DocumentType = "id-card" | "drivers-license" | "passport" | "disability-certificate" | "kra-pin-certificate";
 
@@ -75,6 +76,7 @@ const VerifyIdentityForm = () => {
   const [verificationComplete, setVerificationComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [verificationResults, setVerificationResults] = useState<VerificationResponse | null>(null);
+  const [_showConfirmation, setShowConfirmation] = useState(false);
 
   const [uploadStatus, setUploadStatus] = useState({
     face: { progress: 0, isUploading: false, isError: false, fileName: "Face Image" },
@@ -239,6 +241,7 @@ const VerifyIdentityForm = () => {
       setCurrentStep((prev) => prev + 1);
     } else if (currentStep === STEPS.length - 1) {
       // Start verification process
+      setShowConfirmation(true);
       verifyIdentity();
     }
   };
@@ -500,19 +503,103 @@ const VerifyIdentityForm = () => {
     );
   };
 
-  const VerificationInProgress = () => (
-    <div className="text-center py-12 flex flex-col items-center justify-center">
-      {isLoading ? (
-        <MultiStepVerificationLoader />
-      ) : (
-        // TODO: ADD A DIV TO PICK ALL THE UPLOADED PICTURES AND DISPLAY THEM
-        <>
-          <h2 className="text-xl font-semibold">Ready to Verify</h2>
-          <p className="text-gray-500 mt-2">Click the Complete Verification button to proceed</p>
-        </>
-      )}
-    </div>
-  );
+  const VerificationInProgress = () => {
+    const [showConfirmation, setShowConfirmation] = useState(false);
+
+    return (
+      <div className="text-center py-12 flex flex-col items-center justify-center">
+        {isLoading ? (
+          <MultiStepVerificationLoader />
+        ) : (
+          <>
+            <h2 className="text-xl font-semibold">Ready to Verify</h2>
+            <p className="text-gray-500 mt-2">Please review your documents before verification</p>
+
+            {/* Document preview section */}
+            <div className="mt-8 w-full max-w-3xl">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Face Image Preview */}
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <div className="aspect-square relative">
+                    {uploadedImages.face_Image ? (
+                      <img
+                        src={uploadedImages.face_Image}
+                        alt="Face Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <Camera className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2 bg-gray-50 text-center">
+                    <p className="text-sm font-medium">Face Photo</p>
+                  </div>
+                </div>
+
+                {/* Front ID Preview */}
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <div className="aspect-square relative">
+                    {uploadedImages.front_id_Image ? (
+                      <img
+                        src={uploadedImages.front_id_Image}
+                        alt="Front ID Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <Upload className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2 bg-gray-50 text-center">
+                    <p className="text-sm font-medium">Front Side</p>
+                  </div>
+                </div>
+
+                {/* Back ID Preview */}
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <div className="aspect-square relative">
+                    {uploadedImages.back_id_Image ? (
+                      <img
+                        src={uploadedImages.back_id_Image}
+                        alt="Back ID Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <Upload className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-2 bg-gray-50 text-center">
+                    <p className="text-sm font-medium">Back Side</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                className="mt-6 bg-[#00494c] hover:bg-[#00494c]/90 text-white"
+                onClick={() => setShowConfirmation(true)}
+              >
+                Review and Confirm
+              </Button>
+            </div>
+
+            {/* Confirmation Dialog */}
+            <DocumentConfirmationDialog
+              isOpen={showConfirmation}
+              onClose={() => setShowConfirmation(false)}
+              onConfirm={verifyIdentity}
+              uploadedImages={uploadedImages}
+              documentType={selectedDocument || ""}
+            />
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>

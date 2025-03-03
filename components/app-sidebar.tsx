@@ -91,12 +91,12 @@ export function AppSidebar({ role }: Props) {
 						<SidebarMenu className="px-4">
 							{getItems(role).map((item) => (
 								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton tooltip={item.title} asChild>
+									<SidebarMenuButton tooltip={item.title} asChild className="hover:bg-black/90">
 										<Link
 											href={item.url}
-											className={`flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-black/90 hover:text-white transition-colors ${
+											className={`flex items-center gap-2 px-4 py-2 rounded-xl hover:text-white transition-colors ${
 												pathname === item.url
-													? "bg-black/90 text-white"
+													? "bg-black text-white"
 													: ""
 											}`}
 										>
