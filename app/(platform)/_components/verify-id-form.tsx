@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { ChevronLeft, Camera, Upload, Loader2, Check, X, RefreshCw } from "lucide-react";
 import { FaIdCard, FaRegIdCard, FaPassport } from "react-icons/fa";
+import { TbCertificate } from "react-icons/tb";
 import VerificationResults from "./verificationResults";
+import { MdReceiptLong } from "react-icons/md";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import FileUpload from "@/components/file-upload";
@@ -321,6 +323,20 @@ const VerifyIdentityForm = () => {
         >
           <FaPassport className="w-6 h-6 text-[#00494c] mb-2" />
           <h3 className={`${selectedDocument === "passport" ? "font-bold" : "font-normal"}`}>Passport</h3>
+        </div>
+        <div
+          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "disability-certificate" ? "border-4 border-[#00494c] shadow-md" : ""}`}
+          onClick={() => handleDocumentSelect("disability-certificate")}
+        >
+          <TbCertificate className="w-6 h-6 text-[#00494c] mb-2" />
+          <h3 className={`${selectedDocument === "disability-certificate" ? "font-bold" : "font-normal"}`}>Disablity Certificate</h3>
+        </div>
+        <div
+          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "kra-pin-certificate" ? "border-4 border-[#00494c] shadow-md" : ""}`}
+          onClick={() => handleDocumentSelect("kra-pin-certificate")}
+        >
+          <MdReceiptLong className="w-6 h-6 text-[#00494c] mb-2" />
+          <h3 className={`${selectedDocument === "kra-pin-certificate" ? "font-bold" : "font-normal"}`}>KRA PIN Certificate</h3>
         </div>
       </div>
     </div>
