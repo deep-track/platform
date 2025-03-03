@@ -12,6 +12,7 @@ import FileUpload from "@/components/file-upload";
 import { Checkbox } from "@/components/ui/checkbox";
 import toast, { Toaster } from "react-hot-toast";
 import MultiStepVerificationLoader from "./multistepLoader";
+import { verifyIdentityServerSide } from "@/lib/actions";
 
 type DocumentType = "id-card" | "drivers-license" | "passport" | "disability-certificate" | "kra-pin-certificate";
 
@@ -67,10 +68,6 @@ const STEPS: Step[] = [
     description: "Final verification step",
   },
 ];
-
-// Fixed API endpoint and key handling
-const API_ENDPOINT = "https://api.deeptrack.io/v1/kyc/deeptrackai-id";
-const API_KEY = "555865ca-d030-4ce6-94a0-da42c514ff5d";
 
 const VerifyIdentityForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -203,43 +200,22 @@ const VerifyIdentityForm = () => {
       // Check if all images are uploaded
       if (!uploadedImages.face_Image || !uploadedImages.front_id_Image || !uploadedImages.back_id_Image) {
         toast.error("Please upload all required images");
-        setIsLoading(false);
         return;
       }
 
-      // Log the request data for debugging
-      console.log("Sending verification request with data:", uploadedImages);
+      // Call the server action
+      const result = await verifyIdentityServerSide(uploadedImages);
 
-      // Make the API request with correct headers and endpoint
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY
-        },
-        body: JSON.stringify(uploadedImages)
-      });
-
-      // Log response status for debugging
-      console.log("API response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API error response:", errorText);
-        throw new Error(`Verification failed: ${response.status} ${errorText}`);
+      if (result.success) {
+        setVerificationResults(result.data);
+        setVerificationComplete(true);
+        toast.success("Verification completed successfully");
+      } else {
+        toast.error(result.error || "Verification failed. Please try again.");
       }
-
-      const data: VerificationResponse = await response.json();
-      console.log("Verification successful, received data:", data);
-
-      // Store the verification results
-      setVerificationResults(data);
-
-      // Mark verification as complete
-      setVerificationComplete(true);
     } catch (error) {
       console.error('Verification error:', error);
-      toast.error("Verification failed. Please try again.");
+      toast.error("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
