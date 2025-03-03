@@ -513,6 +513,7 @@ const VerifyIdentityForm = () => {
       {isLoading ? (
         <MultiStepVerificationLoader />
       ) : (
+        // TODO: ADD A DIV TO PICK ALL THE UPLOADED PICTURES AND DISPLAY THEM
         <>
           <h2 className="text-xl font-semibold">Ready to Verify</h2>
           <p className="text-gray-500 mt-2">Click the Complete Verification button to proceed</p>
