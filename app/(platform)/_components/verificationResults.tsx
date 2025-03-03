@@ -152,12 +152,38 @@ const VerificationResults = ({ verificationData }: VerificationResultsProps) => 
     </div>
   );
 
+  // First, modify the DataRow component
   const DataRow = ({ label, value }: { label: string; value: string }) => (
-    <div className="grid grid-cols-2 gap-4 py-2 bg-black text-white px-4 rounded">
-      <span className="text-gray-300">{label}</span>
-      <span className="font-medium text-white">{value}</span>
+    <div className="col-span-1">
+      <div className="text-gray-400 text-sm font-medium mb-1">{label}</div>
+      <div className="font-medium text-white">{value || "-"}</div>
     </div>
   );
+
+  // Then update the Personal Information Grid
+  <div className="bg-[#1E1E1E] text-white p-6 rounded-lg">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6">
+      {/* First row */}
+      <DataRow label="ID NUMBER" value={parsedData.idNumber} />
+      <DataRow label="NAME" value={parsedData.name} />
+      <DataRow label="SEX" value={parsedData.sex} />
+
+      {/* Second row */}
+      <DataRow label="DATE OF BIRTH" value={parsedData.dateOfBirth} />
+      <DataRow label="DISTRICT OF BIRTH" value={parsedData.districtOfBirth} />
+      <DataRow label="PLACE/DISTRICT OF ISSUE" value={parsedData.placeOfIssue} />
+
+      {/* Third row */}
+      <DataRow label="DATE OF ISSUE" value={parsedData.dateOfIssue} />
+      <DataRow label="SERIAL NUMBER" value={parsedData.serialNumber} />
+      <DataRow label="PIN" value={parsedData.pin || "__"} />
+
+      {/* Fourth row */}
+      <DataRow label="DISTRICT OF RESIDENCE" value={parsedData.districtOfResidence} />
+      <DataRow label="LOCATION" value={parsedData.location} />
+      <DataRow label="SERIAL NUMBER" value={parsedData.serialNumberZone || "__"} />
+    </div>
+  </div>
 
   // Prepare verification sections
   const documentChecks = data.document_verification.flatMap(doc =>
@@ -176,31 +202,81 @@ const VerificationResults = ({ verificationData }: VerificationResultsProps) => 
       <div className="max-w-4xl mx-auto">
         <Card className="p-6 space-y-8">
           {/* Header */}
-          <div className="text-center space-y-4">
-            <div className={`inline-block px-6 py-2 rounded-full font-medium ${isVerificationSuccessful
-                ? "bg-cyan-100 text-cyan-800"
-                : "bg-red-100 text-red-800"
+          <div className="text-center space-y-4 -m-6 mb-6">
+            <div className={`flex flex-col items-center justify-center w-full sm:w-[80%] md:w-[60%] lg:w-[497px] mx-auto px-6 py-2 rounded-b-full font-medium ${isVerificationSuccessful
+              ? "bg-cyan-100 text-black"
+              : "bg-red-100 text-red-800"
               }`}>
               {isVerificationSuccessful ? "VERIFICATION SUCCESSFUL" : "VERIFICATION FAILED"}
             </div>
-            <div className="inline-block px-4 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+            <div className="flex flex-col w-[40%] sm:w-[30%] md:w-[25%] lg:w-[250px] items-center justify-center mx-auto px-4 py-1 bg-green-500 text-white text-sm font-semibold">
               {passRate}% PASS RATE
             </div>
           </div>
 
-          {/* Personal Information Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-black text-white p-6 rounded-lg">
-            {Object.entries(parsedData).map(([key, value], index) => (
-              <DataRow
-                key={index}
-                label={key.toUpperCase().replace(/([A-Z])/g, ' $1').trim()}
-                value={value || "-"}
-              />
-            ))}
+          {/* Personal Information Grid - Redesigned for better responsiveness */}
+          <div className="bg-[#3D3D3D] text-white p-4 sm:p-6 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-6">
+              {/* First row */}
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">ID NUMBER</div>
+                <div className="font-medium">{parsedData.idNumber || "-"}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">NAME</div>
+                <div className="font-medium">{parsedData.name || "-"}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">SEX</div>
+                <div className="font-medium">{parsedData.sex || "-"}</div>
+              </div>
+
+              {/* Second row */}
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">DATE OF BIRTH</div>
+                <div className="font-medium">{parsedData.dateOfBirth || "-"}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">DISTRICT OF BIRTH</div>
+                <div className="font-medium">{parsedData.districtOfBirth || "-"}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">PLACE/DISTRICT OF ISSUE</div>
+                <div className="font-medium">{parsedData.placeOfIssue || "-"}</div>
+              </div>
+
+              {/* Third row */}
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">DATE OF ISSUE</div>
+                <div className="font-medium">{parsedData.dateOfIssue || "-"}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">SERIAL NUMBER</div>
+                <div className="font-medium">{parsedData.serialNumber || "-"}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">PIN</div>
+                <div className="font-medium">{parsedData.pin || "-"}</div>
+              </div>
+
+              {/* Fourth row */}
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">DISTRICT OF RESIDENCE</div>
+                <div className="font-medium">{parsedData.districtOfResidence || "-"}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">LOCATION</div>
+                <div className="font-medium">{parsedData.location || "-"}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-gray-400 text-xs sm:text-sm">SERIAL NUMBER</div>
+                <div className="font-medium">{parsedData.serialNumberZone || "-"}</div>
+              </div>
+            </div>
           </div>
 
           {/* Verification Results Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
             <ResultSection
               title="Image quality and metadata"
               items={documentChecks.filter(check =>
@@ -238,7 +314,7 @@ const VerificationResults = ({ verificationData }: VerificationResultsProps) => 
           </div>
 
           {/* Footer Action */}
-          <div className="flex justify-end">
+          <div className="flex justify-center sm:justify-end">
             <Link href="/verifications">
               <button className="text-cyan-500 hover:text-cyan-600 font-medium flex items-center gap-2">
                 Go to All Verifications
