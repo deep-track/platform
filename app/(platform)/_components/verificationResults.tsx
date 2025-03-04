@@ -1,6 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import ErrorModal from "./errorModal";
 
 interface VerificationData {
   message: string;
@@ -15,7 +17,10 @@ interface VerificationData {
   }>;
   face_match: {
     face_match: boolean;
-    details: Record<string, unknown>;
+    details: {
+      similarity: number;
+      confidence: number;
+    };
   };
 }
 
@@ -88,45 +93,23 @@ const calculatePassRate = (data: VerificationData): number => {
 
 interface VerificationResultsProps {
   verificationData?: VerificationData;
+  error?: boolean;
+  onRetry?: () => void;
 }
 
-const VerificationResults = ({ verificationData }: VerificationResultsProps) => {
-  // If no verification data is provided, use mock data
-  const data = verificationData || {
-    message: "Verification processing successful",
-    document_verification: [
-      {
-        documentName: "front_id_Image",
-        text: "JAMHURI YA KENY\nREP\nLIC OF\nOF KENYA\nSERIAL NUMBER:\n248604638\nID NUMBER:\n36449235\nFULL NAMES\nWENSLOUS OTEMA EGESA\nDATE OF BIRTH\n15.09.1998\nSEX\nMALE\nICT OF BIRTH\nBUSIA\nPLACE OF ISSUE\nKITENGELA\nDATE OF ISSUE\n29.05.2018\nHOLDER'S SIGN.\n",
-        verification_data: [
-          { type: "fraud_signals_is_identity_document", fraudFlag: "PASS", normalizedValue: "PASS" },
-          { type: "fraud_signals_suspicious_words", fraudFlag: "PASS", normalizedValue: "PASS" },
-          { type: "fraud_signals_image_manipulation", fraudFlag: "PASS", normalizedValue: "PASS" },
-          { type: "fraud_signals_online_duplicate", fraudFlag: "PASS", normalizedValue: "PASS" }
-        ]
-      },
-      {
-        documentName: "back_id_Image",
-        text: "BUSIA\nMATAYOS\nLOCATION\nBUKHAYO WEST\nSUB-LOCATION\nESIKULU\nWith\nPRINCIPAL REGISTRAR'S SIGN\nT0278218341\nIDKYA2486046389<<4012<<<<<3452\n9809158M1805291<B036449235K<<3\nWENSLOUSKOTEMA<EGESA<<<<<<<<<<\n",
-        verification_data: [
-          { type: "fraud_signals_is_identity_document", fraudFlag: "PASS", normalizedValue: "PASS" },
-          { type: "fraud_signals_suspicious_words", fraudFlag: "PASS", normalizedValue: "PASS" },
-          { type: "fraud_signals_image_manipulation", fraudFlag: "PASS", normalizedValue: "PASS" },
-          { type: "fraud_signals_online_duplicate", fraudFlag: "PASS", normalizedValue: "PASS" }
-        ]
-      }
-    ],
-    face_match: {
-      face_match: true,
-      details: {}
-    }
-  };
+const VerificationResults = ({ verificationData, error, onRetry }: VerificationResultsProps) => {
+  
+  const [isModalOpen, setIsModalOpen] = useState(error || false);
+
+  if (!verificationData) {
+    return null;
+  }
 
   // Process the data
-  const parsedData = processVerificationData(data);
-  const passRate = calculatePassRate(data).toFixed(1);
-  const isVerificationSuccessful = data.face_match.face_match &&
-    data.document_verification.every(doc =>
+  const parsedData = processVerificationData(verificationData);
+  const passRate = calculatePassRate(verificationData).toFixed(1);
+  const isVerificationSuccessful = verificationData.face_match.face_match &&
+    verificationData.document_verification.every(doc =>
       doc.verification_data.every(check => check.fraudFlag === "PASS")
     );
 
@@ -152,41 +135,7 @@ const VerificationResults = ({ verificationData }: VerificationResultsProps) => 
     </div>
   );
 
-  // First, modify the DataRow component
-  const DataRow = ({ label, value }: { label: string; value: string }) => (
-    <div className="col-span-1">
-      <div className="text-gray-400 text-sm font-medium mb-1">{label}</div>
-      <div className="font-medium text-white">{value || "-"}</div>
-    </div>
-  );
-
-  // Then update the Personal Information Grid
-  <div className="bg-[#1E1E1E] text-white p-6 rounded-lg">
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6">
-      {/* First row */}
-      <DataRow label="ID NUMBER" value={parsedData.idNumber} />
-      <DataRow label="NAME" value={parsedData.name} />
-      <DataRow label="SEX" value={parsedData.sex} />
-
-      {/* Second row */}
-      <DataRow label="DATE OF BIRTH" value={parsedData.dateOfBirth} />
-      <DataRow label="DISTRICT OF BIRTH" value={parsedData.districtOfBirth} />
-      <DataRow label="PLACE/DISTRICT OF ISSUE" value={parsedData.placeOfIssue} />
-
-      {/* Third row */}
-      <DataRow label="DATE OF ISSUE" value={parsedData.dateOfIssue} />
-      <DataRow label="SERIAL NUMBER" value={parsedData.serialNumber} />
-      <DataRow label="PIN" value={parsedData.pin || "__"} />
-
-      {/* Fourth row */}
-      <DataRow label="DISTRICT OF RESIDENCE" value={parsedData.districtOfResidence} />
-      <DataRow label="LOCATION" value={parsedData.location} />
-      <DataRow label="SERIAL NUMBER" value={parsedData.serialNumberZone || "__"} />
-    </div>
-  </div>
-
-  // Prepare verification sections
-  const documentChecks = data.document_verification.flatMap(doc =>
+  const documentChecks = verificationData.document_verification.flatMap(doc =>
     doc.verification_data.map(check => ({
       label: check.type
         .replace("fraud_signals_", "")
@@ -305,12 +254,49 @@ const VerificationResults = ({ verificationData }: VerificationResultsProps) => 
               items={[
                 {
                   label: "No IMPERSONATION FRAUD detected",
-                  status: data.face_match.face_match ? "PASSED" : "FAILED"
+                  status: verificationData.face_match.face_match ? "PASSED" : "FAILED"
                 },
                 { label: "Deepfake detection", status: "PASSED" },
                 { label: "No Facial inconsistencies detected", status: "PASSED" }
               ]}
             />
+          </div>
+
+          {/* Face Match Details Section */}
+          <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-teal-700 mb-4">Face Match Details</h3>
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-gray-700" />
+                  <span className="text-gray-700 font-medium">Face Match Result</span>
+                </div>
+                <span className={`px-4 py-1 text-xs font-medium uppercase rounded ${verificationData.face_match.face_match
+                  ? "bg-green-500 text-white"
+                  : "bg-red-500 text-white"
+                  }`}>
+                  {verificationData.face_match.face_match ? "PASSED" : "FAILED"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-gray-700" />
+                  <span className="text-gray-700 font-medium">Similarity</span>
+                </div>
+                <span className="text-gray-700 font-medium">
+                  {verificationData.face_match.details.similarity.toFixed(2)}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-gray-700" />
+                  <span className="text-gray-700 font-medium">Confidence</span>
+                </div>
+                <span className="text-gray-700 font-medium">
+                  {verificationData.face_match.details.confidence.toFixed(2)}%
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Footer Action */}
@@ -324,6 +310,28 @@ const VerificationResults = ({ verificationData }: VerificationResultsProps) => 
           </div>
         </Card>
       </div>
+
+      {/* Modal for failure or retry */}
+      <ErrorModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Verification Failed</h2>
+          <p className="text-gray-700 mb-6">There was an issue with the verification process. Please try again.</p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            >
+              Close
+            </button>
+            <button
+              onClick={onRetry}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </ErrorModal>
     </div>
   );
 };
