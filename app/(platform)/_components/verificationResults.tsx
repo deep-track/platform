@@ -72,19 +72,24 @@ const calculatePassRate = (data: VerificationData): number => {
   let totalChecks = 0;
   let passedChecks = 0;
 
-  // Count verification data checks
-  data.document_verification.forEach(doc => {
-    doc.verification_data.forEach(check => {
-      totalChecks++;
-      if (check.fraudFlag === "PASS") {
-        passedChecks++;
+  // Ensure document_verification is defined and is an array
+  if (Array.isArray(data.document_verification)) {
+    // Count verification data checks
+    data.document_verification.forEach(doc => {
+      if (Array.isArray(doc.verification_data)) {
+        doc.verification_data.forEach(check => {
+          totalChecks++;
+          if (check.fraudFlag === "PASS") {
+            passedChecks++;
+          }
+        });
       }
     });
-  });
+  }
 
   // Add face match check
   totalChecks++;
-  if (data.face_match.face_match) {
+  if (data.face_match && data.face_match.face_match) {
     passedChecks++;
   }
 
@@ -110,7 +115,7 @@ const VerificationResults = ({ verificationData, error, onRetry }: VerificationR
   const passRate = calculatePassRate(verificationData).toFixed(1);
   const isVerificationSuccessful = verificationData.face_match.face_match &&
     verificationData.document_verification.every(doc =>
-      doc.verification_data.every(check => check.fraudFlag === "PASS")
+      Array.isArray(doc.verification_data) && doc.verification_data.every(check => check.fraudFlag === "PASS")
     );
 
   const ResultSection = ({ title, items }: { title: string; items: { label: string; status: "PASSED" | "FAILED" }[] }) => (
@@ -136,14 +141,14 @@ const VerificationResults = ({ verificationData, error, onRetry }: VerificationR
   );
 
   const documentChecks = verificationData.document_verification.flatMap(doc =>
-    doc.verification_data.map(check => ({
+    Array.isArray(doc.verification_data) ? doc.verification_data.map(check => ({
       label: check.type
         .replace("fraud_signals_", "")
         .split("_")
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" "),
       status: check.fraudFlag === "PASS" ? "PASSED" : "FAILED" as "PASSED" | "FAILED"
-    }))
+    })) : []
   );
 
   return (
