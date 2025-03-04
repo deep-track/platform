@@ -45,7 +45,10 @@ interface VerificationResponse {
   }>;
   face_match: {
     face_match: boolean;
-    details: Record<string, unknown>;
+    details: {
+      similarity: number;
+      confidence: number;
+    };
   };
 }
 
