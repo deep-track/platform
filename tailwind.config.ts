@@ -10,23 +10,6 @@ export default withUt({
 	],
 	theme: {
 		extend: {
-			fontSize: {
-				xs: ["0.75rem", { lineHeight: "1.125rem", letterSpacing: "0.01em" }], // 12px
-				sm: ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0.01em" }], // 14px
-				base: ["1rem", { lineHeight: "1.5rem", letterSpacing: "0.01em" }], // 16px
-				lg: ["1.125rem", { lineHeight: "1.75rem", letterSpacing: "0.01em" }], // 18px
-				xl: ["1.25rem", { lineHeight: "1.75rem", letterSpacing: "-0.01em" }], // 20px
-				"2xl": ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.015em" }], // 24px
-				"3xl": ["1.875rem", { lineHeight: "2.25rem", letterSpacing: "-0.02em" }], // 30px
-				"4xl": ["2.25rem", { lineHeight: "2.5rem", letterSpacing: "-0.025em" }], // 36px
-				"5xl": ["3rem", { lineHeight: "3.5rem", letterSpacing: "-0.03em" }], // 48px
-				"6xl": ["3.75rem", { lineHeight: "4rem", letterSpacing: "-0.035em" }], // 60px
-				"fluid-heading": {
-					fontSize: "clamp(2.5rem, 8vw + 1rem, 4.5rem)",
-					lineHeight: "1.1",
-					letterSpacing: "-0.05em",
-				},
-			},
 			fontFamily: {
 				outfit: ["Outfit", "sans-serif"],
 			},
