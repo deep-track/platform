@@ -4,7 +4,7 @@ import {
 } from "@/actions/organization";
 import EmptyState from "@/components/empty-state";
 import CreateOrganizationDialog from "@/modules/organization/create-organization-form";
-import InviteStaffDialog from "@/modules/organization/invite-new-staff";
+import SeatsDialog from "@/modules/organization/seats";
 import MembersTable from "@/modules/organization/tables/members-table";
 import React from "react";
 
@@ -24,7 +24,7 @@ export default async function MembersPage() {
 			) : (
 				<div className="space-y-4">
 					<div className="flex items-center justify-end">
-						<InviteStaffDialog companyId={company.data.id} />
+						<SeatsDialog companyId={company.data.id} />
 					</div>
 					<MembersTable data={members} />
 				</div>
