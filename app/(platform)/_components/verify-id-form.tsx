@@ -24,49 +24,8 @@ import toast, { Toaster } from "react-hot-toast";
 import MultiStepVerificationLoader from "./multistepLoader";
 import { verifyIdentityServerSide } from "@/lib/actions";
 import DocumentConfirmationDialog from "./documentConfirmation";
+import { FileUploadResponse, Step, UploadProgressProps, VerificationResponse, DocumentType } from "@/lib/types";
 
-type DocumentType = "id-card" | "drivers-license" | "passport" | "disability-certificate" | "kra-pin-certificate";
-
-interface Step {
-  title: string;
-  description: string;
-}
-
-interface UploadProgressProps {
-  progress: number;
-  fileName?: string;
-  onCancel: () => void;
-  onRetry: () => void;
-  isUploading: boolean;
-  isError: boolean;
-}
-
-// Define the verification response interface
-interface VerificationResponse {
-  message: string;
-  document_verification: Array<{
-    documentName: string;
-    text: string;
-    verification_data: Array<{
-      type: string;
-      fraudFlag: string;
-      normalizedValue: string;
-    }>;
-  }>;
-  face_match: {
-    face_match: boolean;
-    details: {
-      similarity: number;
-      confidence: number;
-    };
-  };
-}
-
-// Define FileUploadResponse type
-interface FileUploadResponse {
-  url: string;
-  name: string;
-}
 
 const STEPS: Step[] = [
   {
