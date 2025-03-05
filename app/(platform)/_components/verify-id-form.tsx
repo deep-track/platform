@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 import { ChevronLeft, Camera, Upload, Loader2, Check, X, RefreshCw, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { FaIdCard, FaRegIdCard, FaPassport } from "react-icons/fa";
 import { TbCertificate } from "react-icons/tb";
 import VerificationResults from "./verificationResults";
@@ -80,6 +90,8 @@ const VerifyIdentityForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [verificationResults, setVerificationResults] = useState<VerificationResponse | null>(null);
   const [_showConfirmation, setShowConfirmation] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [imageTypeToRemove, setImageTypeToRemove] = useState<'face' | 'frontId' | 'backId' | null>(null);
 
   const [uploadStatus, setUploadStatus] = useState({
     face: { progress: 0, isUploading: false, isError: false, fileName: "Face Image" },
@@ -370,30 +382,34 @@ const VerifyIdentityForm = () => {
 
   // remove images on upload
   const handleRemoveImage = (type: 'face' | 'frontId' | 'backId') => {
-    // Confirm before deletion
-    const confirmRemove = window.confirm("Are you sure you want to remove this image?");
+    setImageTypeToRemove(type);
+    setShowRemoveDialog(true);
+  };
 
-    if (confirmRemove) {
+  const confirmRemoveImage = () => {
+    if (imageTypeToRemove) {
       // Reset the corresponding image URL
       setUploadedImages(prev => ({
         ...prev,
-        [type === 'face' ? 'face_Image' : type === 'frontId' ? 'front_id_Image' : 'back_id_Image']: ""
+        [imageTypeToRemove === 'face' ? 'face_Image' : imageTypeToRemove === 'frontId' ? 'front_id_Image' : 'back_id_Image']: ""
       }));
 
       // Reset upload status for the specific image type
       setUploadStatus(prev => ({
         ...prev,
-        [type]: {
+        [imageTypeToRemove]: {
           progress: 0,
           isUploading: false,
           isError: false,
-          fileName: type === 'face' ? "Face Image" : type === 'frontId' ? "Front ID" : "Back ID"
+          fileName: imageTypeToRemove === 'face' ? "Face Image" : imageTypeToRemove === 'frontId' ? "Front ID" : "Back ID"
         }
       }));
 
       // Optional: Show a toast notification
       toast.success("Image removed successfully");
     }
+    setShowRemoveDialog(false);
+    setImageTypeToRemove(null);
   };
 
   const DocumentUpload = () => {
@@ -724,6 +740,21 @@ const VerifyIdentityForm = () => {
         </div>
       </Card>
     </div>
+
+    <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove Image</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to remove this image?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setShowRemoveDialog(false)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmRemoveImage}>Remove</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 };
