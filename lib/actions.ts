@@ -25,7 +25,7 @@ export async function createApiKey() {
         const companyId = data.companyId;
 
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/users/api-keys/create`,
+            `${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/create`,
             {
                 method: "POST",
                 headers: {
@@ -64,7 +64,7 @@ export async function getApiKeys() {
         const companyId = data.companyId;
 
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/users/api-keys/${userId}/${companyId}`,
+            `${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/${userId}/${companyId}`,
             {
               method: "GET",
                 headers: {
@@ -101,7 +101,7 @@ export async function revokeApiKey(apiKeyId: string) {
 
     const response = await fetch(
       // the apiKeyId is embedded directly in the URL.
-      `${process.env.NEXT_PUBLIC_API_URL}/users/api-keys/${apiKeyId}/revoke`,
+      `${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/${apiKeyId}/revoke`,
       {
         method: "PATCH",
         headers: {
@@ -154,7 +154,7 @@ export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
         }
 
         // Make the API request with proper credentials
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/kyc/deeptrackai-id`, {
+        const response = await fetch(`${process.env.DEEPTRACK_BACKEND_URL}/v1/kyc/deeptrackai-id`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

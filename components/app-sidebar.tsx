@@ -34,7 +34,6 @@ const getItems = (role: "user" | "admin") => {
 	const baseItems = [
 		{ title: "Home", url: "/dashboard", icon: Home },
 		{ title: "Insights", url: "/insights", icon: Database },
-		{ title: "Verifications", url: "#", icon: Search },
 		{ title: "API Keys", url: "/api-keys", icon: Key },
 		{ title: "Settings", url: "#", icon: Settings },
 		{ title: "Organization", url: "#", icon: User2 },
