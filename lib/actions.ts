@@ -162,10 +162,9 @@ export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
             },
             body: JSON.stringify(uploadedImages)
         });
-        
-        const data = await response.json();
 
-        console.log("Data==============>", data)
+        const data = await response.json();
+        
         return { success: true, data };
     } catch (error) {
         console.error('Verification error:', error);

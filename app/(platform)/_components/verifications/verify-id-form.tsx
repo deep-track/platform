@@ -63,7 +63,6 @@ const VerifyIdentityForm = () => {
         ...prev,
         face_Image: res[0].url
       }));
-      console.log("Face image uploaded:", res[0].url);
     }
   };
 
@@ -73,7 +72,6 @@ const VerifyIdentityForm = () => {
         ...prev,
         front_id_Image: res[0].url
       }));
-      console.log("Front ID uploaded:", res[0].url);
     }
   };
 
@@ -83,7 +81,6 @@ const VerifyIdentityForm = () => {
         ...prev,
         back_id_Image: res[0].url
       }));
-      console.log("Back ID uploaded:", res[0].url);
     }
   };
 
@@ -100,8 +97,6 @@ const VerifyIdentityForm = () => {
 
       // Call the server action
       const result = await verifyIdentityServerSide(uploadedImages);
-
-      console.log('results===========>', result);
 
       if (result.success) {
         setVerificationResults(result.data);
