@@ -26,6 +26,11 @@ import { verifyIdentityServerSide } from "@/lib/actions";
 import DocumentConfirmationDialog from "./documentConfirmation";
 import { FileUploadResponse, UploadProgressProps, VerificationResponse, DocumentType } from "@/lib/types";
 import { STEPS } from "@/lib/constants";
+import { useUploadStatus } from "@/hooks/useUploadStatus";
+import { ProgressStepper } from "./progressStepper";
+import { DocumentSelectionCard } from "./documentSelectionCard";
+import { UploadSection } from "./uploadSection";
+import { UploadProgress } from "./uploadProgress";
 
 
 const VerifyIdentityForm = () => {
@@ -38,81 +43,8 @@ const VerifyIdentityForm = () => {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [imageTypeToRemove, setImageTypeToRemove] = useState<'face' | 'frontId' | 'backId' | null>(null);
 
-  const [uploadStatus, setUploadStatus] = useState({
-    face: { progress: 0, isUploading: false, isError: false, fileName: "Face Image" },
-    frontId: { progress: 0, isUploading: false, isError: false, fileName: "Front ID" },
-    backId: { progress: 0, isUploading: false, isError: false, fileName: "Back ID" }
-  });
+  const { uploadStatus, handleUploadProgress, handleUploadError, handleUploadCancel } = useUploadStatus()
 
-  // Functions to handle upload actions
-  const handleUploadProgress = (type: 'face' | 'frontId' | 'backId', progress: number) => {
-    setUploadStatus(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        progress,
-        isUploading: progress < 100 && progress > 0,
-        isError: false
-      }
-    }));
-  };
-
-  const handleUploadError = (type: 'face' | 'frontId' | 'backId') => {
-    setUploadStatus(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        isUploading: false,
-        isError: true
-      }
-    }));
-  };
-
-  const handleUploadCancel = (type: 'face' | 'frontId' | 'backId') => {
-    // Logic to cancel the upload - this would interact with your upload library
-    // For now, we'll just reset the progress
-    setUploadStatus(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        progress: 0,
-        isUploading: false,
-        isError: false
-      }
-    }));
-
-    // If there's an active upload, you would need to cancel it
-    // This depends on what upload library you're using
-    // For example: uploadCancelTokenSource.cancel();
-
-    toast.error(`${uploadStatus[type].fileName} upload canceled`);
-  };
-
-  const handleUploadRetry = (type: 'face' | 'frontId' | 'backId') => {
-    // Reset the error state and prepare for a new upload
-    setUploadStatus(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        progress: 0,
-        isUploading: false,
-        isError: false
-      }
-    }));
-
-    // Logic to retry the upload would go here
-    // This would typically trigger the file selection dialog again
-    toast(`Please select ${uploadStatus[type].fileName} again to retry`);
-
-    // Clear the corresponding uploaded image to allow re-upload
-    if (type === 'face') {
-      setUploadedImages(prev => ({ ...prev, face_Image: "" }));
-    } else if (type === 'frontId') {
-      setUploadedImages(prev => ({ ...prev, front_id_Image: "" }));
-    } else if (type === 'backId') {
-      setUploadedImages(prev => ({ ...prev, back_id_Image: "" }));
-    }
-  };
   
   // State to store uploaded image URLs
   const [uploadedImages, setUploadedImages] = useState({
@@ -154,6 +86,7 @@ const VerifyIdentityForm = () => {
       console.log("Back ID uploaded:", res[0].url);
     }
   };
+
 
   const verifyIdentity = async () => {
     try {
@@ -222,109 +155,6 @@ const VerifyIdentityForm = () => {
     return <VerificationResults verificationData={verificationResults} />;
   }
 
-  const Progress = () => (
-    <div className="w-full mb-8">
-      <div className="h-2 bg-gray-200 rounded-full relative">
-        <div
-          className="h-full bg-[#14B4BC] transform-gpu rounded-full transition-transform duration-500 ease-out"
-          style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
-        />
-      </div>
-      <div className="mt-4 flex justify-between text-sm text-gray-500">
-        <span>Step {currentStep + 1} of {STEPS.length}</span>
-        <span>{STEPS[currentStep].title}</span>
-      </div>
-    </div>
-  );
-
-  const DocumentSelection = () => (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Select Document Type</h2>
-      <p className="text-gray-500 mb-6">Choose a valid government-issued document</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div
-          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "id-card" ? "border-4 border-[#00494c] shadow-md" : ""}`}
-          onClick={() => handleDocumentSelect("id-card")}
-        >
-          <FaIdCard className="w-6 h-6 text-[#00494c] mb-2" />
-          <h3 className={`${selectedDocument === "id-card" ? "font-bold" : "font-normal"}`}>Government-Issued ID Card</h3>
-        </div>
-        <div
-          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "drivers-license" ? "border-4 border-[#00494c] shadow-md" : ""}`}
-          onClick={() => handleDocumentSelect("drivers-license")}
-        >
-          <FaRegIdCard className="w-6 h-6 text-[#00494c] mb-2" />
-          <h3 className={`${selectedDocument === "drivers-license" ? "font-bold" : "font-normal"}`}>Driver&apos;s License</h3>
-        </div>
-        <div
-          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "passport" ? "border-4 border-[#00494c] shadow-md" : ""}`}
-          onClick={() => handleDocumentSelect("passport")}
-        >
-          <FaPassport className="w-6 h-6 text-[#00494c] mb-2" />
-          <h3 className={`${selectedDocument === "passport" ? "font-bold" : "font-normal"}`}>Passport</h3>
-        </div>
-        <div
-          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "disability-certificate" ? "border-4 border-[#00494c] shadow-md" : ""}`}
-          onClick={() => handleDocumentSelect("disability-certificate")}
-        >
-          <TbCertificate className="w-6 h-6 text-[#00494c] mb-2" />
-          <h3 className={`${selectedDocument === "disability-certificate" ? "font-bold" : "font-normal"}`}>Disablity Certificate</h3>
-        </div>
-        <div
-          className={`flex flex-row gap-3 relative p-6 border-2 rounded-lg transition-all duration-300 hover:border-[#00494c] hover:shadow-md cursor-pointer ${selectedDocument === "kra-pin-certificate" ? "border-4 border-[#00494c] shadow-md" : ""}`}
-          onClick={() => handleDocumentSelect("kra-pin-certificate")}
-        >
-          <MdReceiptLong className="w-6 h-6 text-[#00494c] mb-2" />
-          <h3 className={`${selectedDocument === "kra-pin-certificate" ? "font-bold" : "font-normal"}`}>KRA PIN Certificate</h3>
-        </div>
-      </div>
-    </div>
-  );
-
-  const UploadProgress = ({
-    progress = 0,
-    fileName = "File",
-    onCancel,
-    onRetry,
-    isUploading = false,
-    isError = false
-  }: UploadProgressProps) => {
-    return (
-      <div className="w-full my-6">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-sm text-gray-600">{fileName}</span>
-          <div className="flex items-center">
-            <span className="text-sm text-gray-600 mr-2">{Math.round(progress)}%</span>
-            {isUploading && (
-              <button
-                onClick={onCancel}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Cancel upload"
-              >
-                <X className="w-4 h-4 text-gray-600" />
-              </button>
-            )}
-            {isError && (
-              <button
-                onClick={onRetry}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Retry upload"
-              >
-                <RefreshCw className="w-4 h-4 text-gray-600" />
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="h-2 bg-gray-200 rounded-full relative">
-          <div
-            className={`h-full ${isError ? 'bg-red-500' : 'bg-[#00BCD4]'} transform-gpu rounded-full transition-all duration-500 ease-out`}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-    );
-  };
-
   // remove images on upload
   const handleRemoveImage = (type: 'face' | 'frontId' | 'backId') => {
     setImageTypeToRemove(type);
@@ -340,15 +170,7 @@ const VerifyIdentityForm = () => {
       }));
 
       // Reset upload status for the specific image type
-      setUploadStatus(prev => ({
-        ...prev,
-        [imageTypeToRemove]: {
-          progress: 0,
-          isUploading: false,
-          isError: false,
-          fileName: imageTypeToRemove === 'face' ? "Face Image" : imageTypeToRemove === 'frontId' ? "Front ID" : "Back ID"
-        }
-      }));
+      handleUploadCancel(imageTypeToRemove);
 
       // Optional: Show a toast notification
       toast.success("Image removed successfully");
@@ -357,173 +179,24 @@ const VerifyIdentityForm = () => {
     setImageTypeToRemove(null);
   };
 
-  const DocumentUpload = () => {
-    return (
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold">Upload Documents</h2>
-        <p className="text-gray-500">Please upload clear photos of your documents</p>
+  const handleUploadRetry = (type: 'face' | 'frontId' | 'backId') => {
+    // Reset the error state and prepare for a new upload
+    handleUploadError(type);
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Face Image Upload */}
-          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg relative">
-            {uploadedImages.face_Image ? (
-              <>
-                <div className="absolute top-2 right-2 z-10">
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="w-8 h-8"
-                    onClick={() => handleRemoveImage('face')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-                <img
-                  src={uploadedImages.face_Image}
-                  alt="Face Preview"
-                  className="w-full h-full object-cover rounded-lg"
-                />
-                <div className="text-green-600 text-sm flex items-center justify-center mt-2">
-                  <Check className="w-4 h-4 mr-1" /> Uploaded
-                </div>
-              </>
-            ) : (
-              <>
-                <Camera className="w-8 h-8 text-[#00494c] mb-2" />
-                <p className="font-medium">Face Image</p>
-                <p className="text-sm text-gray-500 mt-1">Clear and Lively</p>
-                <div className="mt-2 w-full">
-                  <FileUpload
-                    endpoint="imageUploader"
-                    onChange={handleFaceImageUpload}
-                    onProgress={(progress) => handleUploadProgress('face', progress)}
-                    onError={() => handleUploadError('face')}
-                    disabled={uploadStatus.face.isUploading}
-                  />
-                </div>
-              </>
-            )}
-          </div>
+    // Logic to retry the upload would go here
+    // This would typically trigger the file selection dialog again
+    toast(`Please select ${uploadStatus[type].fileName} again to retry`);
 
-          {/* Front ID Upload (Similar structure, just replace 'face' with 'frontId') */}
-          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg relative">
-            {uploadedImages.front_id_Image ? (
-              <>
-                <div className="absolute top-2 right-2 z-10">
-                  <Button 
-                    variant="destructive" 
-                    size="icon" 
-                    className="w-8 h-8"
-                    onClick={() => handleRemoveImage('frontId')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-                <img
-                  src={uploadedImages.front_id_Image}
-                  alt="Front ID Preview"
-                  className="w-full h-full object-cover rounded-lg"
-                />
-                <div className="text-green-600 text-sm flex items-center justify-center mt-2">
-                  <Check className="w-4 h-4 mr-1" /> Uploaded
-                </div>
-              </>
-            ) : (
-              <>
-                <Upload className="w-8 h-8 text-[#00494c] mb-2" />
-                <p className="font-medium">Front Side</p>
-                <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
-                <div className="mt-2 w-full">
-                  <FileUpload
-                    endpoint="imageUploader"
-                    onChange={handleFrontImageUpload}
-                    onProgress={(progress) => handleUploadProgress('frontId', progress)}
-                    onError={() => handleUploadError('frontId')}
-                    disabled={uploadStatus.frontId.isUploading}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Back ID Upload (Similar structure, just replace 'face' with 'backId') */}
-          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg relative">
-            {uploadedImages.back_id_Image ? (
-              <>
-                <div className="absolute top-2 right-2 z-10">
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="w-8 h-8"
-                    onClick={() => handleRemoveImage('backId')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-                <img
-                  src={uploadedImages.back_id_Image}
-                  alt="Back ID Preview"
-                  className="w-full h-full object-cover rounded-lg"
-                />
-                <div className="text-green-600 text-sm flex items-center justify-center mt-2">
-                  <Check className="w-4 h-4 mr-1" /> Uploaded
-                </div>
-              </>
-            ) : (
-              <>
-                <Upload className="w-8 h-8 text-[#00494c] mb-2" />
-                <p className="font-medium">Back Side</p>
-                <p className="text-sm text-gray-500 mt-1">JPG, PNG, WebP</p>
-                <div className="mt-2 w-full">
-                  <FileUpload
-                    endpoint="imageUploader"
-                    onChange={handleBackImageUpload}
-                    onProgress={(progress) => handleUploadProgress('backId', progress)}
-                    onError={() => handleUploadError('backId')}
-                    disabled={uploadStatus.backId.isUploading}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Add progress bars for each upload that's in progress or has error */}
-        {(uploadStatus.face.isUploading || uploadStatus.face.isError) && (
-          <UploadProgress
-            progress={uploadStatus.face.progress}
-            fileName={uploadStatus.face.fileName}
-            onCancel={() => handleUploadCancel('face')}
-            onRetry={() => handleUploadRetry('face')}
-            isUploading={uploadStatus.face.isUploading}
-            isError={uploadStatus.face.isError}
-          />
-        )}
-
-        {(uploadStatus.frontId.isUploading || uploadStatus.frontId.isError) && (
-          <UploadProgress
-            progress={uploadStatus.frontId.progress}
-            fileName={uploadStatus.frontId.fileName}
-            onCancel={() => handleUploadCancel('frontId')}
-            onRetry={() => handleUploadRetry('frontId')}
-            isUploading={uploadStatus.frontId.isUploading}
-            isError={uploadStatus.frontId.isError}
-          />
-        )}
-
-        {(uploadStatus.backId.isUploading || uploadStatus.backId.isError) && (
-          <UploadProgress
-            progress={uploadStatus.backId.progress}
-            fileName={uploadStatus.backId.fileName}
-            onCancel={() => handleUploadCancel('backId')}
-            onRetry={() => handleUploadRetry('backId')}
-            isUploading={uploadStatus.backId.isUploading}
-            isError={uploadStatus.backId.isError}
-          />
-        )}
-      </div>
-    );
+    // Clear the corresponding uploaded image to allow re-upload
+    if (type === 'face') {
+      setUploadedImages(prev => ({ ...prev, face_Image: "" }));
+    } else if (type === 'frontId') {
+      setUploadedImages(prev => ({ ...prev, front_id_Image: "" }));
+    } else if (type === 'backId') {
+      setUploadedImages(prev => ({ ...prev, back_id_Image: "" }));
+    }
   };
+
 
   const VerificationInProgress = () => {
     const [showConfirmation, setShowConfirmation] = useState(false);
@@ -643,12 +316,132 @@ const VerifyIdentityForm = () => {
           <h1 className="text-2xl font-bold">Verify Identity</h1>
         </div>
 
-        <Progress />
+          <ProgressStepper currentStep={currentStep} />
 
         <div className="min-h-[400px] flex flex-col">
           <div className="flex-1">
-            {currentStep === 0 && <DocumentSelection />}
-            {currentStep === 1 && <DocumentUpload />}
+            {currentStep === 0 && (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <DocumentSelectionCard
+            icon={FaIdCard}
+            title="Government-Issued ID Card"
+            isSelected={selectedDocument === "id-card"}
+            onClick={() => handleDocumentSelect("id-card")}
+          />
+          <DocumentSelectionCard
+            icon={FaRegIdCard}
+            title="Driving License"
+            isSelected={selectedDocument === "drivers-license"}
+            onClick={() => handleDocumentSelect("drivers-license")}
+          />
+          <DocumentSelectionCard
+            icon={FaPassport}
+            title="Passport"
+            isSelected={selectedDocument === "passport"}
+            onClick={() => handleDocumentSelect("passport")}
+          />
+          <DocumentSelectionCard
+            icon={TbCertificate}
+            title="Disability Certificate"
+            isSelected={selectedDocument === "disability-certificate"}
+            onClick={() => handleDocumentSelect("disability-certificate")}
+          />
+          <DocumentSelectionCard
+            icon={MdReceiptLong}
+            title="KRA PIN certificate"
+            isSelected={selectedDocument === "kra-pin-certificate"}
+            onClick={() => handleDocumentSelect("kra-pin-certificate")}
+          />
+          </div>
+            )}
+            {currentStep === 1 && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <UploadSection
+                    type="face"
+                    label="Face Image"
+                    description="Clear and Lively"
+                    uploadedUrl={uploadedImages.face_Image}
+                    uploadProgress={uploadStatus.face.progress}
+                    isUploading={uploadStatus.face.isUploading}
+                    isError={uploadStatus.face.isError}
+                    onRemove={() => handleRemoveImage('face')}
+                    onUpload={handleFaceImageUpload}
+                    onProgress={(p) => handleUploadProgress('face', p)}
+                    onError={() => handleUploadError('face')}
+                  />
+                  <UploadSection
+                    type="frontId"
+                    label="Front Side"
+                    description="JPG, PNG, WebP"
+                    uploadedUrl={uploadedImages.front_id_Image}
+                    uploadProgress={uploadStatus.frontId.progress}
+                    isUploading={uploadStatus.frontId.isUploading}
+                    isError={uploadStatus.frontId.isError}
+                    onRemove={() => handleRemoveImage('frontId')}
+                    onUpload={handleFrontImageUpload}
+                    onProgress={(p) => handleUploadProgress('frontId', p)}
+                    onError={() => handleUploadError('frontId')}
+                  />
+                  <UploadSection
+                    type="backId"
+                    label="Back Side"
+                    description="JPG, PNG, WebP"
+                    uploadedUrl={uploadedImages.back_id_Image}
+                    uploadProgress={uploadStatus.backId.progress}
+                    isUploading={uploadStatus.backId.isUploading}
+                    isError={uploadStatus.backId.isError}
+                    onRemove={() => handleRemoveImage('backId')}
+                    onUpload={handleBackImageUpload}
+                    onProgress={(p) => handleUploadProgress('backId', p)}
+                    onError={() => handleUploadError('backId')}
+                  />
+                </div>
+                {(uploadStatus.face.isUploading || uploadStatus.face.isError) && (
+                    <UploadProgress
+                      progress={uploadStatus.face.progress}
+                      fileName={uploadStatus.face.fileName}
+                      onCancel={() => handleUploadCancel('face')}
+                      onRetry={() => {
+                        handleUploadRetry('face')
+                        setUploadedImages(prev => ({ ...prev, face_Image: "" }))
+                      }}
+                      isUploading={uploadStatus.face.isUploading}
+                      isError={uploadStatus.face.isError}
+                    />
+                  )}
+
+                  {(uploadStatus.frontId.isUploading || uploadStatus.frontId.isError) && (
+                    <UploadProgress
+                      progress={uploadStatus.frontId.progress}
+                      fileName={uploadStatus.frontId.fileName}
+                      onCancel={() => handleUploadCancel('frontId')}
+                      onRetry={() => {
+                        handleUploadRetry('frontId')
+                        setUploadedImages(prev => ({ ...prev, front_id_Image: "" }))
+                      }}
+                      isUploading={uploadStatus.frontId.isUploading}
+                      isError={uploadStatus.frontId.isError}
+                    />
+                  )}
+
+
+                  {(uploadStatus.backId.isUploading || uploadStatus.backId.isError) && (
+                    <UploadProgress
+                      progress={uploadStatus.backId.progress}
+                      fileName={uploadStatus.backId.fileName}
+                      onCancel={() => handleUploadCancel('backId')}
+                      onRetry={() => {
+                        handleUploadRetry('backId')
+                        setUploadedImages(prev => ({ ...prev, back_id_Image: "" }))
+                      }}
+                      isUploading={uploadStatus.backId.isUploading}
+                      isError={uploadStatus.backId.isError}
+                    />
+                  )}
+
+              </div>
+            )}
               {currentStep === 2 && <VerificationInProgress />}
           </div>
           <div className="mt-8 flex flex-col space-y-4">

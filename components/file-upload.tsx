@@ -26,6 +26,11 @@ const FileUpload = ({ onChange, endpoint, onProgress, onError, disabled = false 
 			<Toaster />
 			<UploadDropzone
 				className={`ut-label:text-sm ut-label:italic ut-allowed-content:ut-uploading:text-primary-foreground ut-button:bg-white ut-button:text-black underline ut-button:ut-readying:bg-primary/50 ut-label:hover:text-primary/50 ut-label:text-primary bg-transparent ut-button:hover:bg-customTeal/80 ut-button:hover:cursor-pointer ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+				appearance={{
+					button:{
+						
+					}
+				}}
 				endpoint={endpoint}
 				onUploadBegin={() => {
 					if (onProgress) onProgress(1); // Start with a small progress value
