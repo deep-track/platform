@@ -58,9 +58,6 @@ const DocumentConfirmationDialog: React.FC<DocumentConfirmationDialogProps> = ({
                                     alt="Face"
                                     className="w-full aspect-square object-cover"
                                 />
-                                <button className="absolute top-2 right-2 bg-black/70 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <X className="h-4 w-4 text-white" />
-                                </button>
                             </div>
                         </div>
 
@@ -72,9 +69,6 @@ const DocumentConfirmationDialog: React.FC<DocumentConfirmationDialogProps> = ({
                                     alt="Front ID"
                                     className="w-full aspect-square object-cover"
                                 />
-                                <button className="absolute top-2 right-2 bg-black/70 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <X className="h-4 w-4 text-white" />
-                                </button>
                             </div>
                         </div>
 
@@ -86,9 +80,6 @@ const DocumentConfirmationDialog: React.FC<DocumentConfirmationDialogProps> = ({
                                     alt="Back ID"
                                     className="w-full aspect-square object-cover"
                                 />
-                                <button className="absolute top-2 right-2 bg-black/70 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <X className="h-4 w-4 text-white" />
-                                </button>
                             </div>
                         </div>
                     </div>

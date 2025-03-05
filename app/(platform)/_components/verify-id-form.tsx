@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from "react";
-import { ChevronLeft, Camera, Upload, Loader2, Check, X, RefreshCw } from "lucide-react";
+import { ChevronLeft, Camera, Upload, Loader2, Check, X, RefreshCw, Trash2 } from "lucide-react";
 import { FaIdCard, FaRegIdCard, FaPassport } from "react-icons/fa";
 import { TbCertificate } from "react-icons/tb";
 import VerificationResults from "./verificationResults";
@@ -368,6 +368,34 @@ const VerifyIdentityForm = () => {
     );
   };
 
+  // remove images on upload
+  const handleRemoveImage = (type: 'face' | 'frontId' | 'backId') => {
+    // Confirm before deletion
+    const confirmRemove = window.confirm("Are you sure you want to remove this image?");
+
+    if (confirmRemove) {
+      // Reset the corresponding image URL
+      setUploadedImages(prev => ({
+        ...prev,
+        [type === 'face' ? 'face_Image' : type === 'frontId' ? 'front_id_Image' : 'back_id_Image']: ""
+      }));
+
+      // Reset upload status for the specific image type
+      setUploadStatus(prev => ({
+        ...prev,
+        [type]: {
+          progress: 0,
+          isUploading: false,
+          isError: false,
+          fileName: type === 'face' ? "Face Image" : type === 'frontId' ? "Front ID" : "Back ID"
+        }
+      }));
+
+      // Optional: Show a toast notification
+      toast.success("Image removed successfully");
+    }
+  };
+
   const DocumentUpload = () => {
     return (
       <div className="space-y-6">
@@ -376,9 +404,19 @@ const VerifyIdentityForm = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Face Image Upload */}
-          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg relative">
             {uploadedImages.face_Image ? (
               <>
+                <div className="absolute top-2 right-2 z-10">
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="w-8 h-8"
+                    onClick={() => handleRemoveImage('face')}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
                 <img
                   src={uploadedImages.face_Image}
                   alt="Face Preview"
@@ -406,10 +444,20 @@ const VerifyIdentityForm = () => {
             )}
           </div>
 
-          {/* Front ID Upload */}
-          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+          {/* Front ID Upload (Similar structure, just replace 'face' with 'frontId') */}
+          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg relative">
             {uploadedImages.front_id_Image ? (
               <>
+                <div className="absolute top-2 right-2 z-10">
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="w-8 h-8"
+                    onClick={() => handleRemoveImage('frontId')}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
                 <img
                   src={uploadedImages.front_id_Image}
                   alt="Front ID Preview"
@@ -437,10 +485,20 @@ const VerifyIdentityForm = () => {
             )}
           </div>
 
-          {/* Back ID Upload */}
-          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg">
+          {/* Back ID Upload (Similar structure, just replace 'face' with 'backId') */}
+          <div className="upload-area flex flex-col items-center justify-center text-center p-4 border rounded-lg relative">
             {uploadedImages.back_id_Image ? (
               <>
+                <div className="absolute top-2 right-2 z-10">
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="w-8 h-8"
+                    onClick={() => handleRemoveImage('backId')}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
                 <img
                   src={uploadedImages.back_id_Image}
                   alt="Back ID Preview"
