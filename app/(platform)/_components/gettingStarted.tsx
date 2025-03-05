@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { JSX, ReactNode, useState } from "react";
-import VerificationDialog from "./verification-dialog";
+import VerificationDialog from "./verifications/verification-dialog";
 
 
 interface BannerProps {

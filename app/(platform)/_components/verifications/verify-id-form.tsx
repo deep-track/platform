@@ -24,23 +24,9 @@ import toast, { Toaster } from "react-hot-toast";
 import MultiStepVerificationLoader from "./multistepLoader";
 import { verifyIdentityServerSide } from "@/lib/actions";
 import DocumentConfirmationDialog from "./documentConfirmation";
-import { FileUploadResponse, Step, UploadProgressProps, VerificationResponse, DocumentType } from "@/lib/types";
+import { FileUploadResponse, UploadProgressProps, VerificationResponse, DocumentType } from "@/lib/types";
+import { STEPS } from "@/lib/constants";
 
-
-const STEPS: Step[] = [
-  {
-    title: "Select Document",
-    description: "Choose your identification document type",
-  },
-  {
-    title: "Upload Documents",
-    description: "Upload the required document images",
-  },
-  {
-    title: "Verify",
-    description: "Final verification step",
-  },
-];
 
 const VerifyIdentityForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
