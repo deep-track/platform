@@ -101,6 +101,8 @@ const VerifyIdentityForm = () => {
       // Call the server action
       const result = await verifyIdentityServerSide(uploadedImages);
 
+      console.log('results===========>', result);
+
       if (result.success) {
         setVerificationResults(result.data);
         setVerificationComplete(true);
