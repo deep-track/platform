@@ -48,7 +48,7 @@ type Props = {
 	companyId: string;
 };
 
-export default function InviteStaffDialog({ companyId }: Props) {
+export default function SeatsDialog({ companyId }: Props) {
 	const [open, setOpen] = useState(false);
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -85,12 +85,12 @@ export default function InviteStaffDialog({ companyId }: Props) {
 			<DialogTrigger asChild>
 				<Button>
 					<VscAdd className="mr-2" />
-					Invite Staff
+					Seats
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[425px]">
 				<DialogHeader>
-					<DialogTitle>Invite Staff Member</DialogTitle>
+					<DialogTitle>Members&apos; Seats</DialogTitle>
 					<DialogDescription>
 						Send an invitation to a new staff member to join your organization.
 					</DialogDescription>
