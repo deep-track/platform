@@ -162,14 +162,10 @@ export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
             },
             body: JSON.stringify(uploadedImages)
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("API error response:", errorText);
-            throw new Error(`Verification failed: ${response.status} ${errorText}`);
-        }
-
+        
         const data = await response.json();
+
+        console.log("Data==============>", data)
         return { success: true, data };
     } catch (error) {
         console.error('Verification error:', error);
