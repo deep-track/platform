@@ -249,7 +249,6 @@ const VerificationResults = ({ verificationData, error, onRetry }: VerificationR
             <ResultSection
               title="Verifying Attachments"
               items={[
-                { label: "SELFIE VIDEO looks authentic", status: "PASSED" },
                 { label: "FRONT ID looks authentic", status: "PASSED" },
                 { label: "BACK ID looks authentic", status: "PASSED" }
               ]}
@@ -306,7 +305,7 @@ const VerificationResults = ({ verificationData, error, onRetry }: VerificationR
 
           {/* Footer Action */}
           <div className="flex justify-center sm:justify-end">
-            <Link href="/verifications">
+            <Link href="/insights">
               <button className="text-cyan-500 hover:text-cyan-600 font-medium flex items-center gap-2">
                 Go to All Verifications
                 <span className="text-lg">»</span>
