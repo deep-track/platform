@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import SelectAMLCheckModal from "../_components/aml-check-components/custom-modal";
+import AMLCheckForm from "../_components/aml-check-components/aml-check-form";
 
 export default function AMLCheck() {
 
@@ -9,9 +10,7 @@ export default function AMLCheck() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            {
-                showDialog && <SelectAMLCheckModal onClose={() => setShowDialog(false)} />
-            }
+            <AMLCheckForm />
         </div>
     )
 }
