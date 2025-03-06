@@ -74,8 +74,9 @@ export async function getApiKeys() {
             }
         )
 
-        if (!response.ok) throw new Error("Failed to fetch API keys")
-        return await response.json()
+        const responseData = await response.json();
+
+        return responseData;
     } catch (error) {
         console.error("API Error:", error)
         return []
@@ -164,7 +165,7 @@ export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
         });
 
         const data = await response.json();
-        
+
         return { success: true, data };
     } catch (error) {
         console.error('Verification error:', error);
