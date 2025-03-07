@@ -1,84 +1,43 @@
 "use client"
 
-import { ArrowRight, AlertTriangle, User, Check, User2 } from "lucide-react"
+import { ArrowRight, AlertTriangle, User } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import type {
     VerificationResponse,
-    PersonData,
-    PoliticalExposureItem,
     MatchedEntity,
+    PoliticalExposureItem,
     SanctionItem,
     PepDatabaseItem,
     RelativeEntity,
     FamilyRelative,
 } from "@/lib/types"
 
-// Map of topic codes to readable labels
-export const topics: Record<string, string> = {
-    crime: "Crime",
-    "crime.fraud": "Fraud",
-    "crime.cyber": "Cybercrime",
-    "crime.fin": "Financial crime",
-    "crime.env": "Environmental violations",
-    "crime.theft": "Theft",
-    "crime.war": "War crimes",
-    "crime.boss": "Criminal leadership",
-    "crime.terror": "Terrorism",
-    "crime.traffick": "Trafficking",
-    "crime.traffick.drug": "Drug trafficking",
-    "crime.traffick.human": "Human trafficking",
-    wanted: "Wanted",
-    "corp.offshore": "Offshore",
-    "corp.shell": "Shell company",
-    "corp.public": "Public listed company",
-    "corp.disqual": "Disqualified",
-    gov: "Government",
-    "gov.national": "National government",
-    "gov.state": "State government",
-    "gov.muni": "Municipal government",
-    "gov.soe": "State-owned enterprise",
-    "gov.igo": "Intergovernmental organization",
-    "gov.head": "Head of government or state",
-    "gov.admin": "Civil service",
-    "gov.executive": "Executive branch of government",
-    "gov.legislative": "Legislative branch of government",
-    "gov.judicial": "Judicial branch of government",
-    "gov.security": "Security services",
-    "gov.financial": "Central banking and financial integrity",
-    fin: "Financial services",
-    "fin.bank": "Bank",
-    "fin.fund": "Fund",
-    "fin.adivsor": "Financial advisor",
-    "reg.action": "Regulator action",
-    "reg.warn": "Regulator warning",
-    "role.pep": "Politician",
-    "role.pol": "Non-PEP",
-    "role.rca": "Close Associate",
-    "role.judge": "Judge",
-    "role.civil": "Civil servant",
-    "role.diplo": "Diplomat",
-    "role.lawyer": "Lawyer",
-    "role.acct": "Accountant",
-    "role.spy": "Spy",
-    "role.oligarch": "Oligarch",
-    "role.journo": "Journalist",
-    "role.act": "Activist",
-    "role.lobby": "Lobbyist",
-    "pol.party": "Political party",
-    "pol.union": "Union",
-    rel: "Religion",
-    mil: "Military",
-    "asset.frozen": "Frozen asset",
-    sanction: "Sanctioned entity",
-    "sanction.linked": "Sanction-linked entity",
-    "sanction.counter": "Counter-sanctioned entity",
-    "export.control": "Export controlled",
-    "export.risk": "Trade risk",
-    debarment: "Debarred entity",
-    poi: "Person of interest",
+// Define PersonData interface to type the personData prop
+interface PersonData {
+    country: string
+    idNumber: string
+    name: string
+    dateOfBirth: string
+    gender: string
+    stateOfExistence: string
+    role: string
+    religiousAffiliation: string
+    ethnicity: string
 }
 
-// Helper function to extract political exposure data from entity
+// Map of topic codes to readable labels
+export const topics: Record<string, string> = {
+    "poi": "Person of Interest",
+    "sanction": "Sanctioned Entity",
+    "role.pep": "Politically Exposed Person",
+    "wanted": "Wanted",
+    "role.rca": "Close Associate",
+    "mil": "Military",
+    // Add more mappings as needed
+}
+
+// Helper function to extract political exposure from position array
 const extractPoliticalExposure = (entity: MatchedEntity): PoliticalExposureItem[] => {
     if (!entity?.properties?.position) return []
 
@@ -174,6 +133,31 @@ const formatTopics = (topicCodes?: string[]): string => {
     return topicCodes.map((code) => topics[code] || code).join(", ")
 }
 
+// Low Risk Component
+const LowRiskComponent: React.FC = () => (
+    <>
+        <div className="bg-white py-4 px-6 rounded-t-md">
+            <h2 className="text-[#075c61] font-medium text-lg">Comprehensive screening</h2>
+        </div>
+        <div className="bg-[#f7f7f7] p-6 text-black">
+            <div className="flex items-center justify-between mb-4 py-2">
+                <div className="flex items-center">
+                    <AlertTriangle className="text-[#137a08] mr-2" />
+                    <span>Not found in any Global sanctions lists</span>
+                </div>
+                <div className="bg-[#137a08] text-white px-3 py-1 text-xs font-semibold rounded">PASSED</div>
+            </div>
+            <div className="flex items-center justify-between py-2">
+                <div className="flex items-center">
+                    <AlertTriangle className="text-[#137a08] mr-2" />
+                    <span>Not found in any PEP Database</span>
+                </div>
+                <div className="bg-[#137a08] text-white px-3 py-1 text-xs font-semibold rounded">PASSED</div>
+            </div>
+        </div>
+    </>
+)
+
 interface VerificationUIProps {
     verificationData: VerificationResponse
     personData: PersonData
@@ -184,11 +168,11 @@ export default function VerificationUI({ verificationData, personData }: Verific
     const isLowRisk = normalizedRiskLevel === "LOW"
     const entityData: MatchedEntity = verificationData.matchedEntity || {} as MatchedEntity
 
-    // Extract data from API response
-    const politicalExposure: PoliticalExposureItem[] = extractPoliticalExposure(entityData)
-    const internationalExposure: PoliticalExposureItem[] = extractInternationalExposure(entityData)
-    const sanctionsData: SanctionItem[] = extractSanctions(entityData)
-    const pepEntries: PepDatabaseItem[] = extractPepEntries(entityData)
+    // Extract data from API response (only needed for higher-risk cases)
+    const politicalExposure: PoliticalExposureItem[] = isLowRisk ? [] : extractPoliticalExposure(entityData)
+    const internationalExposure: PoliticalExposureItem[] = isLowRisk ? [] : extractInternationalExposure(entityData)
+    const sanctionsData: SanctionItem[] = isLowRisk ? [] : extractSanctions(entityData)
+    const pepEntries: PepDatabaseItem[] = isLowRisk ? [] : extractPepEntries(entityData)
 
     // Risk meter configuration
     const gaugePosition: Record<"LOW" | "MEDIUM" | "HIGH", string> = {
@@ -224,7 +208,7 @@ export default function VerificationUI({ verificationData, personData }: Verific
                         </div>
                         <div className="absolute -top-1 -right-1">
                             <div className="bg-[#ec1c24] rounded-full w-5 h-5 flex items-center justify-center text-white text-xs">
-                                <User2 />
+                                <Image src="/placeholder.svg?height=20&width=20" width={20} height={20} alt="Flag" />
                             </div>
                         </div>
                     </div>
@@ -313,28 +297,9 @@ export default function VerificationUI({ verificationData, personData }: Verific
                     </div>
                 </div>
 
+                {/* Conditional Rendering Based on Risk Level */}
                 {isLowRisk ? (
-                    <>
-                        <div className="bg-white py-4 px-6 rounded-t-md">
-                            <h2 className="text-[#075c61] font-medium text-lg">Comprehensive screening</h2>
-                        </div>
-                        <div className="bg-[#f7f7f7] p-6 text-black">
-                            <div className="flex items-center justify-between mb-4 py-2">
-                                <div className="flex items-center">
-                                    <AlertTriangle className="text-[#137a08] mr-2" />
-                                    <span>Not found in any Global sanctions lists</span>
-                                </div>
-                                <div className="bg-[#137a08] text-white px-3 py-1 text-xs font-semibold rounded">PASSED</div>
-                            </div>
-                            <div className="flex items-center justify-between py-2">
-                                <div className="flex items-center">
-                                    <AlertTriangle className="text-[#137a08] mr-2" />
-                                    <span>Not found in any PEP Database</span>
-                                </div>
-                                <div className="bg-[#137a08] text-white px-3 py-1 text-xs font-semibold rounded">PASSED</div>
-                            </div>
-                        </div>
-                    </>
+                    <LowRiskComponent />
                 ) : (
                     <>
                         <div className="bg-white py-4 px-6 rounded-t-md">
