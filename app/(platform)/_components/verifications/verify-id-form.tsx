@@ -324,7 +324,7 @@ const VerifyIdentityForm = () => {
                     isSelected={selectedDocument === "id-card"}
                     onClick={() => handleDocumentSelect("id-card")}
                   />
-                  <DocumentSelectionCard
+                  {/* <DocumentSelectionCard
                     icon={FaRegIdCard}
                     title="Driving License"
                     isSelected={selectedDocument === "drivers-license"}
@@ -347,7 +347,7 @@ const VerifyIdentityForm = () => {
                     title="KRA PIN certificate"
                     isSelected={selectedDocument === "kra-pin-certificate"}
                     onClick={() => handleDocumentSelect("kra-pin-certificate")}
-                  />
+                  /> */}
                 </div>
               )}
               {currentStep === 1 && (
