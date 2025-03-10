@@ -30,16 +30,16 @@ import React from "react";
 import { Toaster } from "react-hot-toast";
 
 
-const getItems = (role: "user" | "admin") => {
+const getItems = (role: "user" | "admin" | "head") => {
 	const baseItems = [
 		{ title: "Home", url: "/dashboard", icon: Home },
-		{ title: "Insights", url: "/insights", icon: Database },
+		// { title: "Insights", url: "/insights", icon: Database },
 		{ title: "API Keys", url: "/api-keys", icon: Key },
-		{ title: "Settings", url: "#", icon: Settings },
-		{ title: "Organization", url: "#", icon: User2 },
+		// { title: "Settings", url: "#", icon: Settings },
+		// { title: "Organization", url: "#", icon: User2 },
 	];
 
-	if (role === "admin") {
+	if (role === "admin" || role === "head") {
 		// Insert Members link after Home for admin users
 		baseItems.splice(1, 0, { title: "Members", url: "/members", icon: User2 });
 	}
@@ -48,7 +48,7 @@ const getItems = (role: "user" | "admin") => {
 };
 
 type Props = {
-	role: "user" | "admin";
+	role: "user" | "admin" | "head";
 };
 
 export function AppSidebar({ role }: Props) {
@@ -57,11 +57,12 @@ export function AppSidebar({ role }: Props) {
 
 	// Protected routes that only admin can access
 	const adminRoutes = ["/members"];
+	const headRoles = ["admin", "head"];
 
 	// Check if current path is admin-only and redirect if user is not admin
 	React.useEffect(() => {
 		if (
-			role !== "admin" &&
+			!headRoles.includes(role) &&
 			adminRoutes.some((route) => pathname.startsWith(route))
 		) {
 			router.push("/dashboard");

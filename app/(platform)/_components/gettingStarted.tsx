@@ -1,5 +1,6 @@
 "use client"
 
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { JSX, ReactNode, useState } from "react";
 import VerificationDialog from "./verifications/verification-dialog";
@@ -21,15 +22,16 @@ interface ActionButtonProps {
 }
 
 export const ActionButton = ({
-    text,
-    onClick,
-    className = ""
+	text,
+	onClick,
+	className = "",
 }: ActionButtonProps): JSX.Element => (
-        <button
-        onClick={onClick}
-        className={`bg-white hover:bg-customTeal/90 text-black font-bold py-2 px-4 md:py-2 md:px-6 rounded uppercase tracking-wide transition-colors text-sm md:text-base ${className}`}>
-            {text}
-        </button>
+	<Button
+		onClick={onClick}
+		className={`bg-white hover:bg-customTeal/90 text-black font-bold py-2 px-4 md:py-2 md:px-6 rounded uppercase tracking-wide transition-colors text-sm md:text-base ${className}`}
+	>
+		{text}
+	</Button>
 );
 
 export const Banner = ({

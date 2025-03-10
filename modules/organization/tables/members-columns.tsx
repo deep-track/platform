@@ -1,9 +1,16 @@
 "use client";
 
 import { CompanyMember } from "@/actions/organization";
+import { Badge } from "@/components/ui/badge";
+import { TypographyInlineCode } from "@/components/ui/typography";
 import { ColumnDef } from "@tanstack/react-table";
+import { formatDistanceToNow } from "date-fns";
 
 export const membersColumns: ColumnDef<CompanyMember>[] = [
+	{
+		accessorKey: "fullName",
+		header: "Name",
+	},
 	{
 		accessorKey: "email",
 		header: "Email",
@@ -12,16 +19,24 @@ export const membersColumns: ColumnDef<CompanyMember>[] = [
 		accessorKey: "role",
 		header: "Role",
 		cell: ({ row }) => {
-			return row.getValue("role") === "admin" ? "Admin" : "User";
+			return (
+				<Badge variant="outline" className="capitalize">
+					{row.getValue("role")}
+				</Badge>
+			);
 		},
 	},
 	{
 		accessorKey: "createdAt",
-		header: "Created At",
+		header: "Date Joined",
 		cell: ({ row }) => {
-			return new Date(row.original.createdAt).toLocaleDateString("en-US", {
-				dateStyle: "medium",
-			});
+			return (
+				<TypographyInlineCode className="w-fit font-sans capitalize">
+					{formatDistanceToNow(new Date(row.original.createdAt), {
+						addSuffix: true,
+					})}
+				</TypographyInlineCode>
+			);
 		},
 	},
 ];
