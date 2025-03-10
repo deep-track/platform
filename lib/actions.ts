@@ -83,57 +83,7 @@ export async function getApiKeys() {
     }
 }
 
-export async function revokeApiKey(apiKeyId: string) {
-   const { userId } = await auth();
-    if (!userId) return redirect("/sign-in");
 
-  try {
-
-     const data = await findUserById(userId);
-
-        if (!data) {
-            throw new Error("User not found or invalid response");
-        }
-
-        const companyId = data.companyId;
-
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-    const response = await fetch(
-      // the apiKeyId is embedded directly in the URL.
-      `${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/${apiKeyId}/revoke`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: userId,
-          companyId: companyId,
-        }),
-
-        signal: controller.signal,
-      }
-    )
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      return {
-        success: false,
-        error: errorData.error || "Failed to revoke API key",
-      }
-    }
-
-    // revalidate the cache for API keys after revocation.
-    revalidateTag("apikeys")
-    return { success: true }
-  } catch (error: unknown) {
-    console.error("API Error:", error)
-    return { success: false, error: (error as Error).message }
-  }
-}
 
 export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
     const { userId } = await auth();
