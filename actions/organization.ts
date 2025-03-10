@@ -12,6 +12,8 @@ interface CreateCompanyProps {
 	companyHeadId: string;
 }
 
+
+
 export async function createCompanyAction(props: CreateCompanyProps) {
 	try {
 		const response = await fetch(
@@ -30,12 +32,7 @@ export async function createCompanyAction(props: CreateCompanyProps) {
 				},
 			},
 		);
-		if (!response.ok) {
-			return {
-				status: 500,
-				message: "Something went wrong. Try Again",
-			};
-		}
+		if (!response.ok) throw new Error("Failed to create company");
 		const data = await response.json();
 		return {
 			status: 200,
@@ -58,13 +55,31 @@ export type CompanyWithMembers = {
 	updatedAt: string;
 };
 
-export async function getCompanyAction() {
-	// 'use cache'
+export async function findCompanyAction(userId: string) {
+	try {
+		const response = await fetch(
+			`${process.env.DEEPTRACK_BACKEND_URL}/v1/companies/find-company/${userId}`,
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			},
+		);
 
-	const { userId } = await auth();
+		if (!response.ok) throw new Error("Failed to fetch company");
 
-	if (!userId) redirect("/sign-in");
+		const data: {
+			company: boolean;
+		} = await response.json();
 
+		return data.company;
+	} catch (error) {
+		throw new Error("Failed to fetch company");
+	}
+}
+
+export async function getCompanyAction(userId: string) {
 	try {
 		const response = await fetch(
 			`${process.env.DEEPTRACK_BACKEND_URL}/v1/companies/by-head/${userId}`,
@@ -100,16 +115,37 @@ export interface CompanyMember {
 	companyId: string | null;
 	userId: string;
 	email: string;
+	fullName: string;
 	role: "admin" | "user";
 	createdAt: Date;
 	updatedAt: Date;
 }
 
-export async function getCompanyMembersAction() {
-	const { userId } = await auth();
+export async function checkIfCompanyHeadAction(userId: string) {
+	try {
+		const response = await fetch(
+			`${BACKEND_URLS["Check if Company Head"]}/${userId}`,
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			},
+		);
 
-	if (!userId) redirect("/sign-in");
+		if (!response.ok) throw new Error("Failed to check company head");
 
+		const data: {
+			head: boolean;
+		} = await response.json();
+
+		return data.head;
+	} catch (error) {
+		throw new Error("Failed to check company head");
+	}
+}
+
+export async function getCompanyMembersAction(userId: string) {
 	try {
 		const response = await fetch(
 			`${BACKEND_URLS["Get All Company Members"]}/${userId}`,
@@ -121,9 +157,7 @@ export async function getCompanyMembersAction() {
 			},
 		);
 
-		if (!response.ok) {
-			throw new Error("Failed to fetch company members");
-		}
+		if (!response.ok) throw new Error("Failed to fetch company members");
 
 		const data: CompanyMember[] = await response.json();
 
