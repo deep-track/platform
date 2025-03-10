@@ -1,51 +1,24 @@
-import { redirect } from "next/navigation";
-import ApiKeysUI from "./ApiKeysUI";
-import { auth } from "@clerk/nextjs/server";
+import { getUserApiKeys } from "@/actions/api-keys";
 import { findUserById } from "@/actions/auth-actions";
-
-export interface ApiKey {
-    id: number;
-    keyPrefix: string;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-    hashedKey?: string;
-    ownerid?: number;
-}
+import ApiKeysTable from "@/app/(platform)/api-keys/api-keys-table";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import CreateApiKeyForm from "./create-api-key-form";
 
 export default async function ApiKeysPage() {
-    const { userId } = await auth();
-        if (!userId) return redirect("/sign-in");
+	const { userId } = await auth();
+	if (!userId) return redirect("/sign-in");
 
-    let apiKeys: ApiKey[] = [];
-    try {
-         const data = await findUserById(userId);
-        
-                if (!data) {
-                    throw new Error("User not found or invalid response");
-                }
-        
-            const companyId = data.companyId;
+	const dbUser = await findUserById(userId);
+	const apiKeys = await getUserApiKeys(userId);
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); 
-
-        // TODO: FIX FETCH FROM BACKEND
-        const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/users/api-keys/${userId}/${companyId}`,
-            {
-                next: { tags: ["apikeys"] },
-                signal: controller.signal,
-            }
-        );
-        clearTimeout(timeoutId);
-
-        if (!response.ok) throw new Error("Failed to fetch API keys");
-        apiKeys = await response.json();
-        
-    } catch (error) {
-        console.error("API Error:", error);
-    }
-
-    return <ApiKeysUI initialApiKeys={apiKeys} />;
+	if (!dbUser || !dbUser.companyId) return redirect("/new-user");
+	return (
+		<div className="space-y-4 p-6">
+			<div className="flex items-center justify-end">
+				<CreateApiKeyForm userId={userId} companyId={dbUser.companyId} />
+			</div>
+			<ApiKeysTable apiKeys={apiKeys} />
+		</div>
+	);
 }

@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import Image from "next/image";
 import Link from "next/link";
 
 export default async function KYCHero() {
-	const { userId } = await auth();
+	const user = await currentUser();
+	const userRole = user?.publicMetadata.role;
 
 	return (
 		<section className="w-full overflow-x-hidden min-h-screen">
@@ -24,8 +25,16 @@ export default async function KYCHero() {
 								asChild
 								className="rounded-lg bg-black px-8 py-6 text-lg font-medium text-white hover:bg-gray-900 transition-colors w-full"
 							>
-								<Link href="/new-user">
-									{userId ? "Go to Dashboard" : "Get Started"}
+								<Link
+									href={
+										user
+											? userRole === "head"
+												? "/new-org"
+												: "/new-user"
+											: "/sign-in"
+									}
+								>
+									{user ? "Go to Dashboard" : "Get Started"}
 								</Link>
 							</Button>
 						</div>
