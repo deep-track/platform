@@ -12,7 +12,9 @@ export default async function Layout({
 	if (!user) redirect("/sign-in");
 	return (
 		<SidebarProvider>
-			<AppSidebar role={user?.publicMetadata.role as "user" | "admin"} />
+			<AppSidebar
+				role={user?.publicMetadata.role as "user" | "admin" | "head"}
+			/>
 			<main className="w-full">
 				<div className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:border-border h-11">
 					<div className="flex items-center justify-between mx-8 mt-4">

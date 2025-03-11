@@ -3,19 +3,17 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-// userId: varchar("user_id").notNull().unique(),
-// email: varchar("email").notNull().unique(),
-// role: staffRole("role").default("user").notNull(),
 
 export type BackendUser = {
-	id: string;
-	email: string;
-	createdAt: Date;
-	updatedAt: Date;
-	companyId: string | null;
-	userId: string;
-	role: "user" | "admin";
-};
+		id: string;
+		email: string;
+		fullName: string;
+		createdAt: Date;
+		updatedAt: Date;
+		companyId: string | null;
+		userId: string;
+		role: "user" | "admin";
+	};
 
 type ResponseBody = {
 	status: number;
@@ -23,7 +21,12 @@ type ResponseBody = {
 	message: string;
 };
 
-export async function addNewUser(role: string, companyId?: string) {
+
+export async function addNewUser(
+	role: string,
+	fullName: string,
+	companyId?: string,
+) {
 	const clerkUser = await currentUser();
 	if (!clerkUser) return redirect("/sign-in");
 
@@ -42,12 +45,14 @@ export async function addNewUser(role: string, companyId?: string) {
 					email: emailAddresses[0].emailAddress,
 					role,
 					companyId,
+					fullName,
 				}),
 			},
 		);
 
+		if (!response.ok) throw new Error("Failed to add user");
+
 		const data = (await response.json()) as ResponseBody;
-		if (data.status !== 201) throw new Error(data.message);
 
 		return data;
 	} catch (error) {
@@ -67,10 +72,9 @@ export async function findUserById(userId: string) {
 		},
 	);
 
+	if (!response.ok) throw new Error("Failed to find user");
+
 	const data = (await response.json()) as ResponseBody;
-	if (data.status !== 200) {
-		throw new Error(data.message);
-	}
 
 	return data.data;
 }
