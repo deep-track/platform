@@ -15,12 +15,10 @@ import {
 } from "@/components/ui/sidebar";
 import { TypographyP, TypographySmall } from "@/components/ui/typography";
 import {
-	Database,
+	CalendarDays,
 	Home,
 	Key,
-	Search,
-	Settings,
-	User2,
+	User2
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -29,14 +27,13 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import { Toaster } from "react-hot-toast";
 
-
 const getItems = (role: "user" | "admin" | "head") => {
 	const baseItems = [
 		{ title: "Home", url: "/dashboard", icon: Home },
 		// { title: "Insights", url: "/insights", icon: Database },
 		{ title: "API Keys", url: "/api-keys", icon: Key },
 		// { title: "Settings", url: "#", icon: Settings },
-		// { title: "Organization", url: "#", icon: User2 },
+		{ title: "Billing & Usage", url: "/billing", icon: CalendarDays },
 	];
 
 	if (role === "admin" || role === "head") {

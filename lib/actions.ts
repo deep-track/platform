@@ -83,8 +83,6 @@ export async function getApiKeys() {
     }
 }
 
-
-
 export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
     const { userId } = await auth();
     if (!userId) return redirect("/sign-in");
