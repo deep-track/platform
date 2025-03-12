@@ -83,43 +83,41 @@ export async function getApiKeys() {
     }
 }
 
-export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
-    const { userId } = await auth();
-    if (!userId) return redirect("/sign-in");
+export async function verifyIdentityServerSide(
+	uploadedImages: UploadedImages,
+	apiKey: string,
+) {
+	const { userId } = await auth();
+	if (!userId) return redirect("/sign-in");
 
-    try {
-        const userData = await findUserById(userId);
-        if (!userData?.companyId) {
-            throw new Error("Company ID not found");
-        }
+	try {
+		const userData = await findUserById(userId);
+		if (!userData?.companyId) {
+			throw new Error("Company ID not found");
+		}
 
-        const apiKeys = await getApiKeys();
-        
-        // get the active DeepTrack API key
-        const deepTrackKey = apiKeys.find((key: { status: string }) => key.status === 'Active')?.apiKey || apiKeys.find((key: { status: string }) => key.status === 'Active')?.key;
-        
-        if (!deepTrackKey) {
-            throw new Error("DeepTrack API key not found. Please create one first.");
-        }
+		// Make the API request with proper credentials
+		const response = await fetch(
+			`${process.env.DEEPTRACK_BACKEND_URL}/v1/kyc/deeptrackai-id`,
+			{
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"x-api-key": apiKey,
+				},
+				body: JSON.stringify(uploadedImages),
+			},
+		);
 
-        // Make the API request with proper credentials
-        const response = await fetch(`${process.env.DEEPTRACK_BACKEND_URL}/v1/kyc/deeptrackai-id`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': deepTrackKey
-            },
-            body: JSON.stringify(uploadedImages)
-        });
+		const data = await response.json();
 
-        const data = await response.json();
-
-        return { success: true, data };
-    } catch (error) {
-        console.error('Verification error:', error);
-        return { 
-            success: false, 
-            error: error instanceof Error ? error.message : "Unknown verification error" 
-        };
-    }
+		return { success: true, data };
+	} catch (error) {
+		console.error("Verification error:", error);
+		return {
+			success: false,
+			error:
+				error instanceof Error ? error.message : "Unknown verification error",
+		};
+	}
 }

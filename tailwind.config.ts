@@ -13,11 +13,6 @@ export default withUt({
 			fontFamily: {
 				outfit: ["Outfit", "sans-serif"],
 			},
-			backgroundImage: {
-				"impact-gradient": "linear-gradient(to right, #000910 0%, rgba(255, 255, 255, 0.58) 19%, #304251 75%, #32383D 100%)",
-				"impact-gradient-up": "linear-gradient(to top, #000910 0%, rgba(255, 255, 255, 0.58) 19%, #304251 75%, #32383D 100%)",
-				"card-gradient": "linear-gradient(to top right, #1E1E1E 5%, #1a252d 100%)",
-			},
 			colors: {
 				background: "hsl(var(--background))",
 				foreground: "hsl(var(--foreground))",

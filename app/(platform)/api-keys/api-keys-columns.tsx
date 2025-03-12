@@ -28,7 +28,7 @@ export const apiColumns: ColumnDef<APIKey>[] = [
 			<Badge
 				variant={row.original.status === "Active" ? "success" : "destructive"}
 			>
-				{row.original.status}
+				{row.original.status === "Active" ? "Active" : "Inactive"}
 			</Badge>
 		),
 	},

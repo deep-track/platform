@@ -20,7 +20,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import VerificationUI from "./aml-person-respone";
 
-export default function AMLCheckForm() {
+export default function AMLCheckForm({ apiKey }: { apiKey: string }) {
 	const [checkType, setCheckType] = useState("person");
 	const [isLoading, setIsLoading] = useState(false);
 	const [verificationResult, setVerificationResult] =
@@ -67,7 +67,6 @@ export default function AMLCheckForm() {
 
 		setIsLoading(true);
 		try {
-			const apiKey = "d1aa9ed2-b982-4c09-97e8-fcbe4701b006";
 			const birthDate =
 				formData.day && formData.month && formData.year
 					? `${formData.year}-${formData.month}-${formData.day}`

@@ -1,9 +1,9 @@
 'use client'
 
-import React from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from '@/components/ui/data-table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { verificationColumns } from './verification-column'
 
@@ -21,30 +21,28 @@ interface BillingProps {
 
 export default function Billing(data: BillingProps) {
   return (
-    <div className="container mx-auto py-6 space-y-8 p-2">
-      <h1 className="text-3xl font-bold">Billing & Usage</h1>
+			<div className="container mx-auto py-6 space-y-8 p-2">
+				<h1 className="text-3xl font-bold">Billing & Usage</h1>
 
-      <Tabs defaultValue="usage" className="w-full">
-        <TabsList>
-          <TabsTrigger value="usage">Usage</TabsTrigger>
-          <TabsTrigger value="billing">Billing</TabsTrigger>
-        </TabsList>
+				<Tabs defaultValue="usage" className="w-full">
+					<TabsList>
+						<TabsTrigger value="usage">Usage</TabsTrigger>
+						<TabsTrigger value="billing">Billing</TabsTrigger>
+					</TabsList>
 
-        <TabsContent value="usage" className="space-y-6">
-          {/* Credit Balance Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Available Credits</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-4xl font-bold">
-                {data.balance}
-              </div>
-            </CardContent>
-          </Card>
+					<TabsContent value="usage" className="space-y-6">
+						{/* Credit Balance Card */}
+						<Card>
+							<CardHeader>
+								<CardTitle>Available Credits</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="text-4xl font-bold">{data.balance}</div>
+							</CardContent>
+						</Card>
 
-          {/* Usage Chart */}
-          <Card>
+						{/* Usage Chart */}
+						{/* <Card>
             <CardHeader>
               <CardTitle>Usage by Verification Type</CardTitle>
             </CardHeader>
@@ -63,42 +61,46 @@ export default function Billing(data: BillingProps) {
                 </div>
               ) : <div>No verifications Yet</div>}
             </CardContent>
-          </Card>
+          </Card> */}
 
-          {/* Verification History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Verification History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {data.verifications && (
-                <DataTable
-                  columns={verificationColumns}
-                  data={data.verifications} 
-                  tableTitle={''}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+						{/* Verification History */}
+						<Card>
+							<CardHeader>
+								<CardTitle>Verification History</CardTitle>
+							</CardHeader>
+							<CardContent>
+								{data.verifications && (
+									<DataTable
+										columns={verificationColumns}
+										data={data.verifications}
+										tableTitle={""}
+									/>
+								)}
+							</CardContent>
+						</Card>
+					</TabsContent>
 
-        <TabsContent value="billing" className="space-y-6">
-          {/* Transaction History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Transaction History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardContent className='flex flex-col space-y-4'>
-               <h1>Please contact the team at deeptrack using the contacts below to add credits while we work to integrate a payment gateway:</h1> 
-                <li>tech@deeptrack.io</li>
-                <li>info@deeptrack.io</li>
-                <li>tech@deeptrack.io</li>
-              </CardContent>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+					<TabsContent value="billing" className="space-y-6">
+						{/* Transaction History */}
+						<Card>
+							<CardHeader>
+								<CardTitle>Transaction History</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<CardContent className="flex flex-col space-y-4">
+									<h1>
+										Please contact the team at deeptrack using the contacts
+										below to add credits while we work to integrate a payment
+										gateway:
+									</h1>
+									<li>tech@deeptrack.io</li>
+									<li>info@deeptrack.io</li>
+									<li>tech@deeptrack.io</li>
+								</CardContent>
+							</CardContent>
+						</Card>
+					</TabsContent>
+				</Tabs>
+			</div>
+		);
 }

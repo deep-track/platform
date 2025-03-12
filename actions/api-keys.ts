@@ -93,3 +93,24 @@ export async function revokeApiKey(
 		throw new Error("Failed to revoke API key");
 	}
 }
+
+export async function getActiveAPIKey(userId: string, companyId: string) {
+	try {
+		const response = await fetch(
+			`${process.env.DEEPTRACK_BACKEND_URL}/v1/users/active-api-key/${userId}/${companyId}`,
+			{
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+				},
+			},
+		);
+
+		if (!response.ok) throw new Error("Failed to fetch active API key");
+		const key = (await response.json()) as { apiKey: string | null };
+		return key.apiKey;
+	} catch (error) {
+		console.error("API Error:", error);
+		throw new Error("Failed to fetch active API key");
+	}
+}

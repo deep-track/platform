@@ -91,22 +91,18 @@ interface PageProps {
 }
 
 // Example usage in a page component
-export default function GettingStarted({ }: PageProps): JSX.Element {
+export default function GettingStarted({ children }: PageProps): JSX.Element {
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-    return (
-        <>
-            <Banner
-                title="Get started"
-                description="Ensure the validity of individuals' documents, tax status, images, and online reputation to maintain proper compliance and prevent money laundering."
-                buttonText="CONDUCT VERIFICATION"
-                onButtonClick={() => setIsDialogOpen(true)}
-            />
-            <VerificationDialog
-                open={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
-            />
-        </>
-    );
+	return (
+		<>
+			<Banner
+				title="Get started"
+				description="Ensure the validity of individuals' documents, tax status, images, and online reputation to maintain proper compliance and prevent money laundering."
+				buttonText="CONDUCT VERIFICATION"
+				onButtonClick={() => setIsDialogOpen(true)}
+			/>
+			<VerificationDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+		</>
+	);
 }
