@@ -1,12 +1,11 @@
 'use client'
+
 import React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from '@/components/ui/data-table'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartContainer } from '@/components/ui/chart'
 import { verificationColumns } from './verification-column'
-import { chartConfig } from './chart-config'
 
 export type Verifications = {
     type: string;
@@ -82,7 +81,6 @@ export default function Billing(data: BillingProps) {
             </CardContent>
           </Card>
         </TabsContent>
-
 
         <TabsContent value="billing" className="space-y-6">
           {/* Transaction History */}
