@@ -10,18 +10,17 @@ export default async function NewUser() {
 	if (!clerkUser) redirect("/sign-in");
 
 	const user = await findUserById(clerkUser.id);
-	
+	console.log("Id", clerkUser.id);
 
 	if (!user) {
 		await addNewUser(
 			clerkUser.publicMetadata.role as "user" | "admin",
-			clerkUser.publicMetadata.companyId as string,
 			clerkUser.fullName as string,
+			clerkUser.publicMetadata.companyId as string,
 		);
-		redirect("/dashboard");
-	} else {
-		redirect("/dashboard");
 	}
+
+	redirect("/dashboard");
 
 	return (
 		<div className="min-h-screen flex flex-col items-center justify-center gap-8">
