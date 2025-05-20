@@ -88,7 +88,7 @@ export default function AMLCheckForm() {
 						nationality,
 					},
 					headers: {
-						"x-api-key": apiKey,
+						"x-api-key": "4e41d614-bcf8-4828-a7c0-8d194a12f301",
 						"Content-Type": "application/json",
 					},
 				},
