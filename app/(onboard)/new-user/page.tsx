@@ -20,8 +20,8 @@ export default async function NewUser() {
 		try {
 			await addNewUser(
 				clerkUser.publicMetadata.role as "user" | "admin",
-				clerkUser.publicMetadata.companyId as string,
 				clerkUser.fullName as string,
+				clerkUser.publicMetadata.companyId as string,
 			);
 		} catch (error) {
 			console.error("Error adding new user:", error);

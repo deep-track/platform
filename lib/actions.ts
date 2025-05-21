@@ -87,9 +87,14 @@ export async function getApiKeys() {
 
 export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
     const { userId } = await auth();
-    if (!userId) return redirect("/sign-in");
+				if (!userId) return redirect("/sign-in");
 
-    try {
+				try {
+					const userData = await findUserById(userId);
+					if (!userData?.companyId) {
+						throw new Error("Company ID not found");
+					}
+
 					const apiKeys = await getApiKeys();
 
 					// get the active DeepTrack API key
