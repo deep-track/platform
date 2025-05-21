@@ -90,38 +90,45 @@ export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
     if (!userId) return redirect("/sign-in");
 
     try {
-        const userData = await findUserById(userId);
-        if (!userData?.companyId) {
-            throw new Error("Company ID not found");
-        }
+					const apiKeys = await getApiKeys();
 
-        const apiKeys = await getApiKeys();
-        
-        // get the active DeepTrack API key
-        const deepTrackKey = apiKeys.find((key: { status: string }) => key.status === 'Active')?.apiKey || apiKeys.find((key: { status: string }) => key.status === 'Active')?.key;
-        
-        if (!deepTrackKey) {
-            throw new Error("DeepTrack API key not found. Please create one first.");
-        }
+					// get the active DeepTrack API key
+					const deepTrackKey =
+						apiKeys.find((key: { status: string }) => key.status === "Active")
+							?.apiKey ||
+						apiKeys.find((key: { status: string }) => key.status === "Active")
+							?.key;
 
-        // Make the API request with proper credentials
-        const response = await fetch(`${process.env.DEEPTRACK_BACKEND_URL}/v1/kyc/deeptrackai-id`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': deepTrackKey
-            },
-            body: JSON.stringify(uploadedImages)
-        });
+					if (!deepTrackKey) {
+						throw new Error(
+							"DeepTrack API key not found. Please create one first.",
+						);
+					}
 
-        const data = await response.json();
+					// Make the API request with proper credentials
+					const response = await fetch(
+						`${process.env.DEEPTRACK_BACKEND_URL}/v1/kyc/deeptrackai-id`,
+						{
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								"x-api-key": deepTrackKey,
+							},
+							body: JSON.stringify(uploadedImages),
+						},
+					);
 
-        return { success: true, data };
-    } catch (error) {
-        console.error('Verification error:', error);
-        return { 
-            success: false, 
-            error: error instanceof Error ? error.message : "Unknown verification error" 
-        };
-    }
+					const data = await response.json();
+
+					return { success: true, data };
+				} catch (error) {
+					console.error("Verification error:", error);
+					return {
+						success: false,
+						error:
+							error instanceof Error
+								? error.message
+								: "Unknown verification error",
+					};
+				}
 }
