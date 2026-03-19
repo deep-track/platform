@@ -32,6 +32,9 @@ const FileUpload = ({ onChange, endpoint, onProgress, onError, disabled = false 
 					}
 				}}
 				endpoint={endpoint}
+				config={{
+					mode:"auto"
+				}}
 				onUploadBegin={() => {
 					if (onProgress) onProgress(1); // Start with a small progress value
 				}}
