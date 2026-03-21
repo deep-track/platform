@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     try {
       const auth = await getAuth();
-      externalId = auth?.user?.sub ?? null;
+      externalId = auth?.userId ?? null;
     } catch {
       externalId = null;
     }
