@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { KYCWizardData, PersonalInfoData, DocumentUploadData, SelfieData } from "@/lib/kyc-types";
-import { submitKYC } from "@/actions/kyc";
+import type {
+  KYCWizardData,
+  PersonalInfoData,
+  DocumentUploadData,
+  SelfieData,
+  KYCStatus,
+} from "@/lib/kyc-types";
+import { getKYCRecord, pollShuftiStatus, submitKYC } from "@/actions/kyc";
 import { PersonalInfoStep } from "@/modules/kyc/steps/personal-info-step";
 import { DocumentUploadStep } from "@/modules/kyc/steps/document-upload-step";
 import { SelfieStep } from "@/modules/kyc/steps/selfie-step";
@@ -29,7 +35,50 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<KYCWizardData>({});
   const [completed, setCompleted] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<KYCStatus>("processing");
+  const [submittedKycId, setSubmittedKycId] = useState<string | null>(null);
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!completed || !submittedKycId) return;
+    if (liveStatus === "approved" || liveStatus === "declined") return;
+
+    let pollCount = 0;
+
+    const checkStatus = async () => {
+      pollCount += 1;
+
+      if (pollCount % 3 === 0 && submittedRef) {
+        const shuftiResult = await pollShuftiStatus(submittedKycId, submittedRef);
+        if (shuftiResult.success) {
+          setLiveStatus(shuftiResult.data.status);
+          return;
+        }
+      }
+
+      const result = await getKYCRecord(submittedKycId);
+      if (result.success && result.data) {
+        setLiveStatus(result.data.status);
+      }
+    };
+
+    checkStatus();
+
+    const interval = setInterval(checkStatus, 3000);
+    return () => clearInterval(interval);
+  }, [completed, submittedKycId, submittedRef, liveStatus]);
+
+  useEffect(() => {
+    if (!completed) return;
+    if (liveStatus === "approved" || liveStatus === "declined") return;
+
+    const timer = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [completed, liveStatus]);
 
   function handlePersonalInfo(info: PersonalInfoData) {
     setData((d) => ({ ...d, personalInfo: info }));
@@ -67,7 +116,10 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
       return;
     }
 
+    setSubmittedKycId(result.data.kycId);
     setSubmittedRef(result.data.reference);
+    setLiveStatus("processing");
+    setElapsedSeconds(0);
 
     // If Shufti returned a hosted liveness URL, redirect there
     if (result.data.verificationUrl) {
@@ -98,6 +150,19 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
           <p className="text-slate-500 dark:text-slate-400">
             Your identity verification has been submitted to Shufti Pro for processing.
           </p>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Current status: {liveStatus}</p>
+          {liveStatus !== "approved" && liveStatus !== "declined" && (
+            <>
+              <p className="text-xs text-slate-400 mt-1 tabular-nums">
+                {elapsedSeconds < 60
+                  ? `${elapsedSeconds}s elapsed`
+                  : `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s elapsed`}
+              </p>
+              <p className="text-xs text-slate-400 animate-pulse">
+                Checking for updates every 3 seconds...
+              </p>
+            </>
+          )}
           {submittedRef && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2">
               <span className="text-xs text-slate-500 dark:text-slate-400">Reference:</span>

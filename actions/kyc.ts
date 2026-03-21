@@ -206,6 +206,37 @@ export async function refreshKYCFromShufti(
   }
 }
 
+export async function pollShuftiStatus(
+  kycId: string,
+  reference: string,
+): Promise<KYCActionResult<KYCRecord>> {
+  try {
+    const shuftiStatus = await getShuftiVerificationStatus(reference);
+    const newStatus = mapShuftiEventToStatus(shuftiStatus.event);
+
+    const appUrl =
+      process.env.APP_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://platform-one-sable.vercel.app";
+
+    const res = await fetch(`${appUrl}/api/kyc/${kycId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: newStatus,
+        shuftiEventType: shuftiStatus.event,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+    const data = await res.json();
+    return { success: true, data: data.data };
+  } catch (err) {
+    console.error("[pollShuftiStatus]", err);
+    return { success: false, error: "Failed to poll Shufti status" };
+  }
+}
+
 export async function reviewKYC(params: {
   id: string;
   decision: "approved" | "declined";
