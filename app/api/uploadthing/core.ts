@@ -4,35 +4,14 @@ const f = createUploadthing();
 
 export const ourFileRouter = {
   kycUploader: f({
-    image: {
-      maxFileSize: "16MB",
-      maxFileCount: 1,
-    },
-    "application/pdf": {
-      maxFileSize: "16MB",
-      maxFileCount: 1,
-    },
+    image: { maxFileSize: "10MB", maxFileCount: 1 },
+    blob: { maxFileSize: "10MB", maxFileCount: 1 },
   })
     .middleware(async () => {
       return {};
     })
     .onUploadComplete(async ({ file }) => {
-      return { url: file.url };
-    }),
-  imageUploader: f({
-    image: {
-      maxFileSize: "16MB",
-      maxFileCount: 1,
-    },
-    "application/pdf": {
-      maxFileSize: "16MB",
-      maxFileCount: 1,
-    },
-  })
-    .middleware(async () => {
-      return {};
-    })
-    .onUploadComplete(async ({ file }) => {
+      console.log("Upload complete:", file.url);
       return { url: file.url };
     }),
 } satisfies FileRouter;
