@@ -26,9 +26,8 @@ function requireBackend() {
 
 export async function submitKYC(
   payload: KYCSubmitPayload,
-): Promise<KYCActionResult<{ kycId: string; reference: string; verificationUrl: string | null }>> {
+): Promise<KYCActionResult<{ kycId: string; reference: string; verificationUrl: string }>> {
   try {
-    requireBackend();
     const auth = await getAuth();
     if (!auth?.userId) return { success: false, error: "Not authenticated" };
 
@@ -42,25 +41,27 @@ export async function submitKYC(
       email: payload.personalInfo.email,
       country: payload.personalInfo.address.country,
       documentType: payload.document.documentType,
-      documentFrontUrl: payload.document.documentFrontUrl,
-      documentBackUrl: payload.document.documentBackUrl,
-      documentFrontBase64: payload.document.documentFrontBase64,
-      documentBackBase64: payload.document.documentBackBase64,
-      selfieUrl: payload.selfie.selfieUrl,
-      selfieBase64: payload.selfie.selfieBase64,
       firstName: payload.personalInfo.firstName,
       lastName: payload.personalInfo.lastName,
       middleName: payload.personalInfo.middleName,
       dateOfBirth: payload.personalInfo.dateOfBirth,
       gender: payload.personalInfo.gender,
-      documentNumber: payload.document.documentNumber,
-      expiryDate: payload.document.expiryDate,
-      issueDate: payload.document.issueDate,
     });
 
     const shuftiResponse = await createShuftiVerification(shuftiRequest);
 
-    const res = await fetch(`${BACKEND}/api/kyc`, {
+    if (!shuftiResponse.verification_url) {
+      throw new Error(
+        "Shufti did not return a verification URL. " + JSON.stringify(shuftiResponse),
+      );
+    }
+
+    const appUrl =
+      process.env.APP_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://platform-one-sable.vercel.app";
+
+    const res = await fetch(`${appUrl}/api/kyc`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -70,13 +71,7 @@ export async function submitKYC(
         userName: currentUser.fullName,
         personalInfo: payload.personalInfo,
         documentType: payload.document.documentType,
-        documentFrontUrl: payload.document.documentFrontUrl,
-        documentBackUrl: payload.document.documentBackUrl,
-        selfieUrl: payload.selfie.selfieUrl,
-        status:
-          shuftiResponse.event === "verification.accepted"
-            ? "approved"
-            : "processing",
+        status: "pending",
         shuftiEventType: shuftiResponse.event,
         shuftiVerificationUrl: shuftiResponse.verification_url,
         invitationToken: payload.invitationToken,
@@ -95,7 +90,7 @@ export async function submitKYC(
       data: {
         kycId: data.id,
         reference,
-        verificationUrl: shuftiResponse.verification_url ?? null,
+        verificationUrl: shuftiResponse.verification_url,
       },
     };
   } catch (err) {

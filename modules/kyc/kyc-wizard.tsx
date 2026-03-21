@@ -1,21 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type {
   KYCWizardData,
   PersonalInfoData,
   DocumentUploadData,
-  SelfieData,
-  KYCStatus,
 } from "@/lib/kyc-types";
-import { getKYCRecord, pollShuftiStatus, submitKYC } from "@/actions/kyc";
+import { submitKYC } from "@/actions/kyc";
 import { PersonalInfoStep } from "@/modules/kyc/steps/personal-info-step";
 import { DocumentUploadStep } from "@/modules/kyc/steps/document-upload-step";
-import { SelfieStep } from "@/modules/kyc/steps/selfie-step";
 import { ReviewStep } from "@/modules/kyc/steps/review-step";
-import { CheckCircle, User, FileText, Camera, ClipboardCheck } from "lucide-react";
+import { CheckCircle, User, FileText, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KYCWizardProps {
@@ -25,60 +22,16 @@ interface KYCWizardProps {
 
 const STEPS = [
   { id: 0, title: "Personal Info", icon: User, shortTitle: "Personal" },
-  { id: 1, title: "Document Upload", icon: FileText, shortTitle: "Document" },
-  { id: 2, title: "Selfie", icon: Camera, shortTitle: "Selfie" },
-  { id: 3, title: "Review & Submit", icon: ClipboardCheck, shortTitle: "Review" },
+  { id: 1, title: "Document Type", icon: FileText, shortTitle: "Document" },
+  { id: 2, title: "Review & Submit", icon: ClipboardCheck, shortTitle: "Review" },
 ];
 
 export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<KYCWizardData>({});
-  const [completed, setCompleted] = useState(false);
-  const [liveStatus, setLiveStatus] = useState<KYCStatus>("processing");
-  const [submittedKycId, setSubmittedKycId] = useState<string | null>(null);
-  const [submittedRef, setSubmittedRef] = useState<string | null>(null);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  useEffect(() => {
-    if (!completed || !submittedKycId) return;
-    if (liveStatus === "approved" || liveStatus === "declined") return;
-
-    let pollCount = 0;
-
-    const checkStatus = async () => {
-      pollCount += 1;
-
-      if (pollCount % 3 === 0 && submittedRef) {
-        const shuftiResult = await pollShuftiStatus(submittedKycId, submittedRef);
-        if (shuftiResult.success) {
-          setLiveStatus(shuftiResult.data.status);
-          return;
-        }
-      }
-
-      const result = await getKYCRecord(submittedKycId);
-      if (result.success && result.data) {
-        setLiveStatus(result.data.status);
-      }
-    };
-
-    checkStatus();
-
-    const interval = setInterval(checkStatus, 3000);
-    return () => clearInterval(interval);
-  }, [completed, submittedKycId, submittedRef, liveStatus]);
-
-  useEffect(() => {
-    if (!completed) return;
-    if (liveStatus === "approved" || liveStatus === "declined") return;
-
-    const timer = setInterval(() => {
-      setElapsedSeconds((s) => s + 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [completed, liveStatus]);
+  const [, setSubmittedKycId] = useState<string | null>(null);
+  const [, setSubmittedRef] = useState<string | null>(null);
 
   function handlePersonalInfo(info: PersonalInfoData) {
     setData((d) => ({ ...d, personalInfo: info }));
@@ -92,14 +45,8 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleSelfie(selfie: SelfieData) {
-    setData((d) => ({ ...d, selfie: selfie }));
-    setCurrentStep(3);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
   async function handleSubmit() {
-    if (!data.personalInfo || !data.document || !data.selfie) {
+    if (!data.personalInfo || !data.document) {
       toast.error("Please complete all steps before submitting.");
       return;
     }
@@ -107,7 +54,7 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
     const result = await submitKYC({
       personalInfo: data.personalInfo,
       document: data.document,
-      selfie: data.selfie,
+      selfie: { selfieUrl: "" },
       invitationToken,
     });
 
@@ -118,75 +65,10 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
 
     setSubmittedKycId(result.data.kycId);
     setSubmittedRef(result.data.reference);
-    setLiveStatus("processing");
-    setElapsedSeconds(0);
-
-    // If Shufti returned a hosted liveness URL, redirect there
-    if (result.data.verificationUrl) {
-      toast.success("Redirecting to liveness verification…");
-      setTimeout(() => {
-        window.location.href = result.data.verificationUrl!;
-      }, 1200);
-      return;
-    }
-
-    // No liveness URL — image_only path, show success screen
-    setCompleted(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  if (completed) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center py-16 px-4 space-y-6">
-        <div className="relative">
-          <div className="h-20 w-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <CheckCircle className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div className="absolute -inset-2 rounded-full bg-emerald-500/10 animate-ping" />
-        </div>
-
-        <div className="space-y-2 max-w-md">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Verification Submitted!</h2>
-          <p className="text-slate-500 dark:text-slate-400">
-            Your identity verification has been submitted to Shufti Pro for processing.
-          </p>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Current status: {liveStatus}</p>
-          {liveStatus !== "approved" && liveStatus !== "declined" && (
-            <>
-              <p className="text-xs text-slate-400 mt-1 tabular-nums">
-                {elapsedSeconds < 60
-                  ? `${elapsedSeconds}s elapsed`
-                  : `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s elapsed`}
-              </p>
-              <p className="text-xs text-slate-400 animate-pulse">
-                Checking for updates every 3 seconds...
-              </p>
-            </>
-          )}
-          {submittedRef && (
-            <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-2">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Reference:</span>
-              <code className="text-xs font-mono text-slate-700 dark:text-slate-300">{submittedRef}</code>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3 flex-wrap justify-center">
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-6 py-2.5 transition-colors"
-          >
-            Go to Dashboard
-          </button>
-          <button
-            onClick={() => router.push("/kyc")}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium px-6 py-2.5 transition-colors"
-          >
-            View All Verifications
-          </button>
-        </div>
-      </div>
-    );
+    toast.success("Redirecting to secure verification...");
+    setTimeout(() => {
+      window.location.href = result.data.verificationUrl;
+    }, 1000);
   }
 
   return (
@@ -263,13 +145,10 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
           />
         )}
         {currentStep === 2 && (
-          <SelfieStep defaultValues={data.selfie} onNext={handleSelfie} onBack={() => setCurrentStep(1)} />
-        )}
-        {currentStep === 3 && (
           <ReviewStep
             data={data}
             onSubmit={handleSubmit}
-            onBack={() => setCurrentStep(2)}
+            onBack={() => setCurrentStep(1)}
             onEdit={(step: number) => setCurrentStep(step)}
           />
         )}

@@ -128,42 +128,27 @@ export function buildShuftiRequest(params: {
   email: string;
   country: string;
   documentType: ShuftiDocumentType;
-  documentFrontUrl: string;
-  documentBackUrl?: string;
-  documentFrontBase64?: string;
-  documentBackBase64?: string;
-  selfieUrl: string;
-  selfieBase64?: string;
   firstName?: string;
   lastName?: string;
   middleName?: string;
   dateOfBirth?: string;
   gender?: string;
-  documentNumber?: string;
-  expiryDate?: string;
-  issueDate?: string;
 }): ShuftiVerificationRequest {
-  const appUrl = (
+  const appUrl =
     process.env.APP_BASE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://platform-one-sable.vercel.app"
-  ).replace(/\/$/, "");
-  const callbackUrl = `${appUrl}/api/webhooks/shufti`;
-  console.log("[Shufti] Building request with callback_url:", callbackUrl);
-  const documentBackProof = params.documentBackBase64 ?? params.documentBackUrl;
+    "https://platform-one-sable.vercel.app";
 
   return {
     reference: params.reference,
-    callback_url: callbackUrl,
+    callback_url: `${appUrl}/api/webhooks/shufti`,
+    redirect_url: `${appUrl}/kyc/result?reference=${params.reference}`,
     country: params.country.toUpperCase().slice(0, 2),
     language: "EN",
     email: params.email,
     verification_mode: "any",
     document: {
-      proof: params.documentFrontBase64 ?? params.documentFrontUrl,
-      ...(documentBackProof && {
-        additional_proof: documentBackProof,
-      }),
+      proof: "",
       supported_types: [params.documentType],
       name: {
         first_name: params.firstName,
@@ -172,14 +157,9 @@ export function buildShuftiRequest(params: {
       },
       dob: params.dateOfBirth,
       gender: params.gender,
-      document_number: params.documentNumber,
-      expiry_date: params.expiryDate,
-      issue_date: params.issueDate,
     },
     face: {
-      proof: params.selfieBase64 ?? params.selfieUrl,
-      allow_offline: true,
-      allow_online: true,
+      proof: "",
     },
   };
 }
