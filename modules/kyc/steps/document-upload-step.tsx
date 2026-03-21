@@ -75,7 +75,7 @@ function FileDropZone({
       const uploaded = await uploadFiles("kycUploader", { files: [file] });
       if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
 
-      onChange(uploaded[0].url);
+      onChange(uploaded[0].ufsUrl ?? uploaded[0].url);
       onBase64Change?.(base64);
     } catch {
       setError("Upload failed. Please try again.");

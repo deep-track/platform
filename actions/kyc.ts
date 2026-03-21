@@ -14,7 +14,7 @@ import type {
   KYCSubmitPayload,
   KYCStatus,
 } from "@/lib/kyc-types";
-import { getAuth } from "@/lib/auth";
+import { getAuth, getCurrentUser } from "@/lib/auth";
 
 const BACKEND = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -31,6 +31,9 @@ export async function submitKYC(
     requireBackend();
     const auth = await getAuth();
     if (!auth?.userId) return { success: false, error: "Not authenticated" };
+
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return { success: false, error: "User not found" };
 
     const reference = `KYC-${randomUUID().replace(/-/g, "").slice(0, 16).toUpperCase()}`;
 
@@ -63,6 +66,8 @@ export async function submitKYC(
       body: JSON.stringify({
         reference,
         userId: auth.userId,
+        userEmail: currentUser.email,
+        userName: currentUser.fullName,
         personalInfo: payload.personalInfo,
         documentType: payload.document.documentType,
         documentFrontUrl: payload.document.documentFrontUrl,

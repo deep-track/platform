@@ -34,17 +34,44 @@ export async function GET(req: NextRequest) {
 // POST /api/kyc — create KYC record
 export async function POST(req: NextRequest) {
   try {
-    const auth = await getAuth();
-    if (!auth?.userId) {
+    const body = await req.json();
+
+    // Try Auth0 session first, fall back to userId in body
+    let externalId: string | null = null;
+
+    try {
+      const auth = await getAuth();
+      externalId = auth?.user?.sub ?? null;
+    } catch {
+      externalId = null;
+    }
+
+    // Fall back to userId sent in body from server action
+    if (!externalId) {
+      externalId = body.userId ?? null;
+    }
+
+    if (!externalId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-
-    const user = await prisma.user.findUnique({
-      where: { externalId: auth.userId },
+    let user = await prisma.user.findUnique({
+      where: { externalId },
       include: { headOf: true, memberships: true },
     });
+
+    // Auto-create user if they exist in Auth0 but not DB yet
+    if (!user && body.userEmail) {
+      user = await prisma.user.create({
+        data: {
+          externalId,
+          email: body.userEmail,
+          fullName: body.userName ?? "",
+          role: "user",
+        },
+        include: { headOf: true, memberships: true },
+      });
+    }
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

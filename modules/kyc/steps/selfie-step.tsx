@@ -108,7 +108,7 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
         const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
         const uploaded = await uploadFiles("kycUploader", { files: [file] });
         if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
-        setSelfieUrl(uploaded[0].url);
+        setSelfieUrl(uploaded[0].ufsUrl ?? uploaded[0].url);
         setMode("preview");
       } catch {
         setError("Upload failed. Please retake your photo.");
@@ -138,7 +138,7 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
 
       const uploaded = await uploadFiles("kycUploader", { files: [file] });
       if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
-      setSelfieUrl(uploaded[0].url);
+      setSelfieUrl(uploaded[0].ufsUrl ?? uploaded[0].url);
       setMode("preview");
     } catch {
       setError("Upload failed. Please try again.");
