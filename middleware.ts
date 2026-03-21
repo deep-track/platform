@@ -1,4 +1,4 @@
-import { auth0, isAuth0Configured } from "@/lib/auth0";
+import { getAuth0 } from "@/lib/auth0";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -13,29 +13,29 @@ function isRecoverableMiddlewareError(error: unknown) {
 	);
 }
 
-export async function middleware(request: NextRequest) {
-	if (!isAuth0Configured || !auth0) {
-		return NextResponse.next();
-	}
+       const { auth0, isAuth0Configured } = getAuth0();
+       if (!isAuth0Configured || !auth0) {
+	       return NextResponse.next();
+       }
 
-	try {
-		return await auth0.middleware(request);
-	} catch (error) {
-		if (!isRecoverableMiddlewareError(error)) {
-			throw error;
-		}
+       try {
+	       return await auth0.middleware(request);
+       } catch (error) {
+	       if (!isRecoverableMiddlewareError(error)) {
+		       throw error;
+	       }
 
-		const response = NextResponse.next();
-		const cookies = request.cookies.getAll();
+	       const response = NextResponse.next();
+	       const cookies = request.cookies.getAll();
 
-		for (const cookie of cookies) {
-			if (cookie.name === "appSession" || cookie.name.startsWith("appSession.")) {
-				response.cookies.set(cookie.name, "", { path: "/", maxAge: 0 });
-			}
-		}
+	       for (const cookie of cookies) {
+		       if (cookie.name === "appSession" || cookie.name.startsWith("appSession.")) {
+			       response.cookies.set(cookie.name, "", { path: "/", maxAge: 0 });
+		       }
+	       }
 
-		return response;
-	}
+	       return response;
+       }
 }
 
 export const config = {

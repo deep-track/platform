@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { getKYCList, getKYCStats } from "@/actions/kyc";
 import { KYCTable } from "@/modules/kyc/kyc-table";
