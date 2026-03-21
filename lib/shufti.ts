@@ -141,10 +141,12 @@ export function buildShuftiRequest(params: {
   issueDate?: string;
 }): ShuftiVerificationRequest {
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || "http://localhost:3001").replace(/\/$/, "");
+  const callbackUrl = `${appUrl}/api/webhooks/shufti`;
+  console.log("[Shufti] Building request with callback_url:", callbackUrl);
 
   return {
     reference: params.reference,
-    callback_url: `${appUrl}/api/webhooks/shufti`,
+    callback_url: callbackUrl,
     country: params.country.toUpperCase().slice(0, 2),
     language: "EN",
     email: params.email,
