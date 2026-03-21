@@ -130,7 +130,10 @@ export function buildShuftiRequest(params: {
   documentType: ShuftiDocumentType;
   documentFrontUrl: string;
   documentBackUrl?: string;
+  documentFrontBase64?: string;
+  documentBackBase64?: string;
   selfieUrl: string;
+  selfieBase64?: string;
   firstName?: string;
   lastName?: string;
   middleName?: string;
@@ -147,6 +150,7 @@ export function buildShuftiRequest(params: {
   ).replace(/\/$/, "");
   const callbackUrl = `${appUrl}/api/webhooks/shufti`;
   console.log("[Shufti] Building request with callback_url:", callbackUrl);
+  const documentBackProof = params.documentBackBase64 ?? params.documentBackUrl;
 
   return {
     reference: params.reference,
@@ -156,9 +160,9 @@ export function buildShuftiRequest(params: {
     email: params.email,
     verification_mode: "any",
     document: {
-      proof: params.documentFrontUrl,
-      ...(params.documentBackUrl && {
-        additional_proof: params.documentBackUrl,
+      proof: params.documentFrontBase64 ?? params.documentFrontUrl,
+      ...(documentBackProof && {
+        additional_proof: documentBackProof,
       }),
       supported_types: [params.documentType],
       name: {
@@ -173,7 +177,7 @@ export function buildShuftiRequest(params: {
       issue_date: params.issueDate,
     },
     face: {
-      proof: params.selfieUrl ?? "",
+      proof: params.selfieBase64 ?? params.selfieUrl,
       allow_offline: true,
       allow_online: true,
     },

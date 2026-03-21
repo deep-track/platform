@@ -33,23 +33,19 @@ const DOCUMENT_TYPES = [
 
 type DocType = "passport" | "id_card" | "driving_license";
 
-async function uploadToUploadthing(file: File): Promise<string> {
-  const res = await uploadFiles("kycUploader", { files: [file] });
-  if (!res || res.length === 0) throw new Error("Upload failed");
-  return res[0].url;
-}
-
 function FileDropZone({
   label,
   hint,
   value,
   onChange,
+  onBase64Change,
   required,
 }: {
   label: string;
   hint?: string;
   value?: string;
   onChange: (url: string) => void;
+  onBase64Change?: (b64: string) => void;
   required?: boolean;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -69,10 +65,19 @@ function FileDropZone({
     setUploading(true);
 
     try {
-      const uploadedUrl = await uploadToUploadthing(file);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      onChange(uploadedUrl);
-    } catch (err) {
+      const uploaded = await uploadFiles("kycUploader", { files: [file] });
+      if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
+
+      onChange(uploaded[0].url);
+      onBase64Change?.(base64);
+    } catch {
       setError("Upload failed. Please try again.");
     } finally {
       setUploading(false);
@@ -121,7 +126,10 @@ function FileDropZone({
             </div>
             <button
               type="button"
-              onClick={() => onChange("")}
+              onClick={() => {
+                onChange("");
+                onBase64Change?.("");
+              }}
               className="p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500 transition-colors"
             >
               <X className="h-4 w-4" />
@@ -161,7 +169,7 @@ function FileDropZone({
                 <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
                   Drop file here or <span className="text-violet-600 dark:text-violet-400">browse</span>
                 </p>
-                <p className="text-xs text-slate-400 mt-0.5">JPG, PNG or PDF · Max 10MB</p>
+                <p className="text-xs text-slate-400 mt-0.5">JPG, PNG or PDF · Max 16MB</p>
               </div>
             </div>
           )}
@@ -184,7 +192,9 @@ export function DocumentUploadStep({ defaultValues, onNext, onBack }: DocumentUp
     defaultValues: {
       documentType: undefined,
       documentFrontUrl: "",
+      documentFrontBase64: "",
       documentBackUrl: "",
+      documentBackBase64: "",
       documentNumber: "",
       expiryDate: "",
       issueDate: "",
@@ -248,6 +258,7 @@ export function DocumentUploadStep({ defaultValues, onNext, onBack }: DocumentUp
                         hint={requiresBack ? "Clear photo of the front side" : "The page with your photo and personal details"}
                         value={field.value}
                         onChange={field.onChange}
+                        onBase64Change={(b64) => form.setValue("documentFrontBase64", b64)}
                         required
                       />
                     </FormControl>
@@ -267,6 +278,7 @@ export function DocumentUploadStep({ defaultValues, onNext, onBack }: DocumentUp
                           hint="Clear photo of the back side"
                           value={field.value}
                           onChange={field.onChange}
+                          onBase64Change={(b64) => form.setValue("documentBackBase64", b64)}
                         />
                       </FormControl>
                       <FormMessage />

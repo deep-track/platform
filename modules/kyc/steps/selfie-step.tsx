@@ -25,19 +25,10 @@ interface SelfieStepProps {
 
 type Mode = "choose" | "camera" | "upload" | "preview";
 
-async function uploadToUploadthing(file: File): Promise<string> {
-  try {
-    const res = await uploadFiles("kycUploader", { files: [file] });
-    if (!res || res.length === 0) throw new Error("Upload failed");
-    return res[0].url;
-  } catch (error) {
-    throw new Error(`Selfie upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
-  }
-}
-
 export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
   const [mode, setMode] = useState<Mode>(defaultValues?.selfieUrl ? "preview" : "choose");
   const [selfieUrl, setSelfieUrl] = useState<string>(defaultValues?.selfieUrl ?? "");
+  const [selfieBase64, setSelfieBase64] = useState<string>(defaultValues?.selfieBase64 ?? "");
   const [error, setError] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -106,9 +97,18 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
         return;
       }
       try {
-        const file = new File([blob], "selfie.jpg", { type: blob.type || "image/jpeg" });
-        const url = await uploadToUploadthing(file);
-        setSelfieUrl(url);
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        setSelfieBase64(base64);
+
+        const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
+        const uploaded = await uploadFiles("kycUploader", { files: [file] });
+        if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
+        setSelfieUrl(uploaded[0].url);
         setMode("preview");
       } catch {
         setError("Upload failed. Please retake your photo.");
@@ -128,8 +128,17 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
       return;
     }
     try {
-      const url = await uploadToUploadthing(file);
-      setSelfieUrl(url);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      setSelfieBase64(base64);
+
+      const uploaded = await uploadFiles("kycUploader", { files: [file] });
+      if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
+      setSelfieUrl(uploaded[0].url);
       setMode("preview");
     } catch {
       setError("Upload failed. Please try again.");
@@ -139,6 +148,7 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
   function reset() {
     stopCamera();
     setSelfieUrl("");
+    setSelfieBase64("");
     setError(null);
     setCameraError(null);
     setMode("choose");
@@ -149,7 +159,7 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
       setError("Please provide a selfie to continue.");
       return;
     }
-    onNext({ selfieUrl });
+    onNext({ selfieUrl, selfieBase64 });
   }
 
   return (

@@ -23,7 +23,9 @@ export const documentUploadSchema = z.object({
     required_error: "Document type is required",
   }),
   documentFrontUrl: z.string().min(1, "Front of document is required"),
+  documentFrontBase64: z.string().optional(),
   documentBackUrl: z.string().optional(),
+  documentBackBase64: z.string().optional(),
   documentNumber: z.string().optional(),
   expiryDate: z.string().optional(),
   issueDate: z.string().optional(),
@@ -31,6 +33,7 @@ export const documentUploadSchema = z.object({
 
 export const selfieSchema = z.object({
   selfieUrl: z.string().min(1, "Selfie image is required"),
+  selfieBase64: z.string().optional(),
 });
 
 export type PersonalInfoData = z.infer<typeof personalInfoSchema>;
