@@ -68,7 +68,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const handleSignOut = () => {
     // Use full page redirect to Auth0 logout endpoint
     // This is required by Auth0 SDK and avoids CORS issues
-    window.location.href = '/api/auth/logout'
+    window.location.href = '/auth/logout'
   }
 
   const projects = [

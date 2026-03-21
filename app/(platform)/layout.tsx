@@ -25,7 +25,7 @@ export default async function Layout({
 								{user.fullName}
 							</span>
 							<Button asChild size="sm" variant="outline">
-								<a href="/api/auth/logout">Logout</a>
+								<a href="/auth/logout">Logout</a>
 							</Button>
 						</div>
 					</div>
