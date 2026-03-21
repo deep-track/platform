@@ -1,5 +1,5 @@
-import { addNewUser, findUserById } from "@/actions/auth-actions";
-import { findCompanyAction } from "@/actions/organization";
+import { addNewUser, findUser } from "@/actions/auth-actions";
+import { getOrganizationByUser } from "@/actions/organization";
 import { getCurrentUser } from "@/lib/auth";
 import CreateOrganization from "@/modules/organization/create-organization";
 import { redirect } from "next/navigation";
@@ -11,18 +11,23 @@ export default async function NewOrg() {
 
 	if (user.role !== "head") redirect("/new-user");
 
-	const dbUser = await findUserById(user.id);
+	const dbUser = await findUser(user.id);
 	if (!dbUser) {
-		await addNewUser(
-			user.role,
-			user.fullName,
-			user.companyId,
-		);
+		const addResult = await addNewUser({
+			userId: user.id,
+			email: user.email,
+			fullName: user.fullName,
+			role: user.role,
+		});
+
+		if (!addResult.success) {
+			console.warn(`new-org addNewUser skipped: ${addResult.error ?? "unknown error"}`);
+		}
 	}
 
-	const company = await findCompanyAction(user.id);
+	const { org } = await getOrganizationByUser(user.id);
 
-	if (company) redirect("/dashboard");
+	if (org) redirect("/dashboard");
 
 	return (
 		<div className="min-h-screen w-full flex items-center justify-center">

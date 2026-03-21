@@ -20,6 +20,7 @@ import {
 	Key,
 	Search,
 	Settings,
+	ShieldCheck,
 	User2,
 } from "lucide-react";
 import Image from "next/image";
@@ -33,6 +34,7 @@ import { Toaster } from "react-hot-toast";
 const getItems = (role: "user" | "admin" | "head") => {
 	const baseItems = [
 		{ title: "Home", url: "/dashboard", icon: Home },
+		{ title: "KYC", url: "/kyc", icon: ShieldCheck },
 		// { title: "Insights", url: "/insights", icon: Database },
 		{ title: "API Keys", url: "/api-keys", icon: Key },
 		// { title: "Settings", url: "#", icon: Settings },
@@ -79,9 +81,9 @@ export function AppSidebar({ role }: Props) {
 							<Image
 								src="/deeptrack-logo.png"
 								alt="DeepTrack logo"
-								width={120}
-								height={120}
-								className="px-2 py-2 mt-2"
+								width={128}
+								height={28}
+								className="px-2 py-2 mt-2 h-auto"
 								priority
 							/>
 						</SidebarGroupLabel>
@@ -117,9 +119,9 @@ export function AppSidebar({ role }: Props) {
 						<Image
 							src="/deeptrack-logo.png"
 							alt="DeepTrack logo"
-							width={120}
-							height={80}
-							className="mb-2"
+							width={128}
+							height={28}
+							className="mb-2 h-auto"
 							priority
 						/>
 						<TypographyP className="font-bold">Need help?</TypographyP>

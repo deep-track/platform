@@ -1,101 +1,91 @@
 "use server";
 
-import { findUserById } from "@/actions/auth-actions";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export type APIKey = {
 	id: string;
 	name: string;
-	companyId: string;
-	status: "Active" | "Suspended";
-	createdAt: Date;
-	updatedAt: Date;
-	ownerId: string;
-	apiKey: string;
+	status?: string;
+	createdAt?: Date;
+	updatedAt?: Date;
+	apiKey?: string;
 };
 
-export async function getUserApiKeys(userId: string) {
-	try {
-		const data = await findUserById(userId);
-		if (!data || !data.companyId) {
-			console.warn("User not found or missing company; returning empty API key list.");
-			return [] as APIKey[];
-		}
-		const companyId = data.companyId;
+export async function getAPIKeys(): Promise<unknown[]> {
+  try {
+    const res = await fetch(`${APP_URL}/api/api-keys`, {
+      cache: "no-store",
+    });
 
-		const response = await fetch(
-			`${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/${userId}/${companyId}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
+    if (!res.ok) return [];
 
-		if (!response.ok) {
-			console.warn("Failed to fetch API keys; returning empty list.");
-			return [] as APIKey[];
-		}
-		const keys: APIKey[] = await response.json();
-		return keys;
-	} catch (error) {
-		console.error("API Error:", error);
-		return [] as APIKey[];
-	}
+    const data = await res.json();
+    return data.data ?? [];
+  } catch (err) {
+    console.error("getAPIKeys error:", err);
+    return [];
+  }
+}
+
+export async function getUserApiKeys(userId: string): Promise<unknown[]> {
+  return getAPIKeys();
+}
+
+export async function createAPIKey(
+  name: string
+): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  try {
+    const res = await fetch(`${APP_URL}/api/api-keys`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      return { success: false, error: text };
+    }
+
+    const data = await res.json();
+    return { success: true, data: data.data };
+  } catch (err) {
+    console.error("createAPIKey error:", err);
+    return { success: false, error: "Failed to create API key" };
+  }
 }
 
 export async function createApiKey(
 	userId: string,
 	name: string,
 	companyId: string,
-) {
-	try {
-		const response = await fetch(
-			`${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/create`,
-			{
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ name, companyId, userId }),
-			},
-		);
+): Promise<unknown> {
+  return createAPIKey(name);
+}
 
-		if (!response.ok) throw new Error("Failed to create API key");
-		const key: APIKey = await response.json();
-		return key;
-	} catch (error) {
-		console.error("API Error:", error);
-		throw new Error("Failed to create API key");
-	}
+export async function revokeAPIKey(
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${APP_URL}/api/api-keys/${id}/revoke`, {
+      method: "PATCH",
+    });
+
+    if (!res.ok) {
+      return { success: false, error: "Failed to revoke key" };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("revokeAPIKey error:", err);
+    return { success: false, error: "Failed to revoke API key" };
+  }
 }
 
 export async function revokeApiKey(
 	apiKeyId: string,
 	userId: string,
 	companyId: string,
-) {
-	try {
-		const response = await fetch(
-			// the apiKeyId is embedded directly in the URL.
-			`${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/${apiKeyId}/revoke`,
-			{
-				method: "PATCH",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					userId: userId,
-					companyId: companyId,
-				}),
-			},
-		);
-
-		if (!response.ok) throw new Error("Failed to revoke API key");
-
-		return true;
-	} catch (error: unknown) {
-		console.error("API Error:", error);
-		throw new Error("Failed to revoke API key");
-	}
+): Promise<boolean> {
+  const result = await revokeAPIKey(apiKeyId);
+  return result.success;
 }

@@ -11,6 +11,7 @@ export default function LogoLink() {
 				alt="Deeptrack Platform Logo"
 				width={128}
 				height={28}
+				className="h-auto"
 			/>
 		</Link>
 	);

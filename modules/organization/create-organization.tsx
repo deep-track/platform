@@ -86,14 +86,14 @@ function CreateOrganization({ userId }: Props) {
 				companyHeadId: userId,
 			});
 
-			if (response.status === 200) {
-				toast.success(response.message, {
+			if ((response as any).status === 200) {
+				toast.success((response as any).message, {
 					description: "You will be redirected to the dashboard",
 				});
 				form.reset();
 				router.push("/dashboard");
 			} else {
-				toast.error(response.message || "An error occurred");
+				toast.error((response as any).message || "An error occurred");
 			}
 		} catch (error) {
 			console.error("Form submission error:", error);

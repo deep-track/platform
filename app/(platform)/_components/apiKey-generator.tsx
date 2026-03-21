@@ -4,50 +4,31 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle, CheckCircle2, Copy, Eye, EyeOff } from "lucide-react"
-import axios from "axios"
-import { getSession } from "@/lib/session"
 
 export default function ApiKeyGenerator() {
     const [apiKey, setApiKey] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [userId, setUserId] = useState<string | null>(null)
     const [showKey, setShowKey] = useState<boolean>(false)
-
-    useEffect(() => {
-        const fetchUserId = async () => {
-            const session = await getSession()
-           
-            setUserId(session?.user.id || null)
-        }
-        fetchUserId()
-    }, [])
 
     async function handleSubmit() {
         setApiKey(null)
         setError(null)
 
         try {
-            const session = await getSession()
-           
-            if (!session) {
-                setError("Not authenticated")
-                return
-            }
-
-            const { user, accessToken } = session
-           
-
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}/create-apikey`, {
-                ownerId: user.id
-            }, {
+            const response = await fetch("/api/api-keys", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`
-                }
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name: "Generated API Key" }),
             })
 
-           
-            setApiKey(response.data.apiKey) // ✅ FIXED: Correct API key assignment
+            if (!response.ok) {
+                throw new Error("Failed to generate API key")
+            }
+
+            const payload = await response.json()
+            setApiKey(payload?.data?.apiKey ?? null)
 
             // Auto-hide after 30 seconds
             setTimeout(() => {
@@ -75,8 +56,6 @@ export default function ApiKeyGenerator() {
        
     }, [apiKey])
 
-    if (!userId) return null
-
     return (
         <Card className="w-full max-w-md mx-auto">
             <CardHeader>
@@ -84,7 +63,7 @@ export default function ApiKeyGenerator() {
             </CardHeader>
             <CardContent>
                 <div className="text-sm text-muted-foreground mb-4">
-                    API Key will be generated for your account ID: {userId}
+                    API Key will be generated for your account.
                 </div>
                 <Button onClick={handleSubmit} className="w-full">
                     Generate API Key

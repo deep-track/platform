@@ -22,8 +22,8 @@ export default async function MembersPage() {
 		<div className="p-4 min-h-[calc(100vh-2.75rem)] h-full">
 			<div className="space-y-4">
 				<div className="flex items-center justify-end">
-					{checkIfCompanyHead && company.data && (
-						<SeatsDialog companyId={company.data.id} />
+					{checkIfCompanyHead && company && (company as any).id && (
+						<SeatsDialog companyId={(company as any).id} />
 					)}
 				</div>
 				<MembersTable data={members} />

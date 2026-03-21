@@ -32,9 +32,9 @@ export const membersColumns: ColumnDef<CompanyMember>[] = [
 		cell: ({ row }) => {
 			return (
 				<TypographyInlineCode className="w-fit font-sans capitalize">
-					{formatDistanceToNow(new Date(row.original.createdAt), {
+					{row.original.createdAt ? formatDistanceToNow(new Date(row.original.createdAt), {
 						addSuffix: true,
-					})}
+					}) : "N/A"}
 				</TypographyInlineCode>
 			);
 		},

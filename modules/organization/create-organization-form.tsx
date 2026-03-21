@@ -88,13 +88,13 @@ async function onSubmit(values: z.infer<typeof formSchema>) {
 			companyHeadId: user.sub,
 		});
 
-		if (response.status === 200) {
-			toast.success(response.message);
+		if ((response as any).status === 200) {
+			toast.success((response as any).message);
 			setOpen(false);
 			form.reset();
 			router.refresh();
 		} else {
-			toast.error(response.message || "An error occurred");
+			toast.error((response as any).message || "An error occurred");
 		}
 	} catch (error) {
 		console.error("Form submission error:", error);

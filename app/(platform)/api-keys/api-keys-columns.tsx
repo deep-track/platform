@@ -17,7 +17,7 @@ export const apiColumns: ColumnDef<APIKey>[] = [
 		header: "API Key",
 		cell: ({ row }) => (
 			<Badge variant="secondary" className="font-mono py-1">
-				{`${row.original.apiKey.slice(0, 4)}****`}
+				{`${(row.original.apiKey ?? "").slice(0, 4)}****`}
 			</Badge>
 		),
 	},
@@ -37,9 +37,9 @@ export const apiColumns: ColumnDef<APIKey>[] = [
 		header: "Created",
 		cell: ({ row }) => (
 			<TypographyInlineCode className="text-muted-foreground capitalize  font-sans w-fit">
-				{formatDistanceToNow(new Date(row.original.createdAt), {
+				{row.original.createdAt ? formatDistanceToNow(new Date(row.original.createdAt), {
 					addSuffix: true,
-				})}
+				}) : "N/A"}
 			</TypographyInlineCode>
 		),
 	},
@@ -52,8 +52,8 @@ export const apiColumns: ColumnDef<APIKey>[] = [
 			return (
 				<RevokeApiKey
 					keyId={row.original.id}
-					userId={row.original.ownerId}
-					companyId={row.original.companyId}
+					userId=""
+					companyId=""
 				/>
 			);
 		},

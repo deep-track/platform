@@ -1,4 +1,4 @@
-import { addNewUser, findUserById } from "@/actions/auth-actions";
+import { addNewUser, findUser } from "@/actions/auth-actions";
 import { TypographyMuted } from "@/components/ui/typography";
 import { getCurrentUser } from "@/lib/auth";
 import { Loader } from "lucide-react";
@@ -13,19 +13,19 @@ export default async function NewUser() {
 	}
 
 	// Then check if user exists in our database
-	const user = await findUserById(authUser.id);
+	const user = await findUser(authUser.id);
 	
 	// If user doesn't exist, create them first
 	if (!user) {
-		try {
-			await addNewUser(
-				authUser.role,
-				authUser.fullName,
-				authUser.companyId,
-			);
-		} catch (error) {
-			console.error("Error adding new user:", error);
-			// Still redirect to dashboard, error handling can be done there
+		const result = await addNewUser({
+			userId: authUser.id,
+			email: authUser.email,
+			fullName: authUser.email?.split("@")[0] || "User",
+			role: "user",
+		});
+
+		if (!result.success) {
+			console.warn(`new-user addNewUser skipped: ${result.error ?? "unknown error"}`);
 		}
 	}
 

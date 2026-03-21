@@ -26,7 +26,13 @@ export function NavUser({
         <div className="rounded-lg bg-black p-4 relative">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
-              <Image src="/deeptrack-logo.png" width={100} height={100} alt="logo" />
+              <Image
+                src="/deeptrack-logo.png"
+                width={128}
+                height={28}
+                alt="logo"
+                className="h-auto w-auto"
+              />
               {/* <div className="ml-1 flex space-x-[2px]">
                 <div className="w-[3px] h-4 bg-foreground"></div>
                 <div className="w-[3px] h-4 bg-foreground"></div>

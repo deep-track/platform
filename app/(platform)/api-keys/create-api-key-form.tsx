@@ -52,7 +52,7 @@ function CreateApiKeyForm({ userId, companyId }: Props) {
 	async function onSubmit(values: z.infer<typeof formSchema>) {
 		try {
 			const newKey = await createApiKey(userId, values.name, companyId);
-			setApiKey(newKey);
+			setApiKey(newKey as any);
 
 			toast.success("Key successfully created");
 			router.refresh();
@@ -121,8 +121,8 @@ function CreateApiKeyForm({ userId, companyId }: Props) {
 									<div className="flex items-center justify-between rounded-lg border bg-gradient-to-br from-muted/50 to-muted/95 p-2">
 										<TypographyInlineCode className="flex-1 text-sm w-fit">
 											{showKey
-												? apiKey.apiKey
-												: `${apiKey.apiKey.slice(0, 8)}*****${apiKey.apiKey.slice(-4)}`}
+												? (apiKey.apiKey ?? "")
+												: `${(apiKey.apiKey ?? "").slice(0, 8)}*****${(apiKey.apiKey ?? "").slice(-4)}`}
 										</TypographyInlineCode>
 										<div className="ml-auto flex flex-shrink-0 gap-2">
 											<Button
@@ -140,7 +140,7 @@ function CreateApiKeyForm({ userId, companyId }: Props) {
 											<Button
 												variant="outline"
 												size="icon"
-												onClick={() => copyToClipboard(apiKey.apiKey)}
+												onClick={() => copyToClipboard(apiKey.apiKey ?? "")}
 												className="rounded-full"
 											>
 												<Copy className="h-4 w-4" />

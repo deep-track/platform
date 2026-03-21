@@ -1,167 +1,109 @@
 "use server";
 
-import { BACKEND_URLS } from "@/lib/backend-utls";
-import { redirect } from "next/navigation";
-
-interface CreateCompanyProps {
-	name: string;
-	email: string;
-	phone: string;
-	companyDomain: "finance" | "media";
-	companyHeadId: string;
-}
-
-
-
-export async function createCompanyAction(props: CreateCompanyProps) {
-	try {
-		const response = await fetch(
-			`${process.env.DEEPTRACK_BACKEND_URL}/v1/companies`,
-			{
-				method: "POST",
-				body: JSON.stringify({
-					name: props.name,
-					email: props.email,
-					phone: props.phone,
-					companyHeadId: props.companyHeadId,
-					companyDomain: props.companyDomain,
-				}),
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
-		if (!response.ok) throw new Error("Failed to create company");
-		const data = await response.json();
-		return {
-			status: 200,
-			data,
-			message: "Company Created Successfully",
-		};
-	} catch (error) {
-		throw new Error("Failed to create company");
-	}
-}
-
-export type CompanyWithMembers = {
-	id: string;
-	name: string;
-	email: string;
-	phone: string;
-	companyHeadId: string;
-	companyDomain: "finance" | "media";
-	createdAt: string;
-	updatedAt: string;
-};
-
-export async function findCompanyAction(userId: string) {
-	try {
-		const response = await fetch(
-			`${process.env.DEEPTRACK_BACKEND_URL}/v1/companies/find-company/${userId}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
-
-		if (!response.ok) throw new Error("Failed to fetch company");
-
-		const data: {
-			company: boolean;
-		} = await response.json();
-
-		return data.company;
-	} catch (error) {
-		throw new Error("Failed to fetch company");
-	}
-}
-
-export async function getCompanyAction(userId: string) {
-	try {
-		const response = await fetch(
-			`${process.env.DEEPTRACK_BACKEND_URL}/v1/companies/by-head/${userId}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
-
-		if (!response.ok) {
-			return {
-				status: 500,
-				message: "Something went wrong. Try Again",
-			};
-		}
-
-		const data = await response.json();
-
-		return {
-			status: 200,
-			data: data as CompanyWithMembers,
-			message: "Company Created Successfully",
-		};
-	} catch (error) {
-		throw new Error("Failed to fetch company");
-	}
-}
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export interface CompanyMember {
 	id: string;
-	companyId: string | null;
+	companyId?: string;
 	userId: string;
 	email: string;
 	fullName: string;
 	role: "admin" | "user";
-	createdAt: Date;
-	updatedAt: Date;
+	createdAt?: Date;
+	updatedAt?: Date;
 }
 
-export async function checkIfCompanyHeadAction(userId: string) {
-	try {
-		const response = await fetch(
-			`${BACKEND_URLS["Check if Company Head"]}/${userId}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
+export async function createOrganization(params: {
+  name: string;
+  email?: string;
+  phone?: string;
+  domain?: string;
+  headExternalId: string;
+}): Promise<{ success: boolean; data?: unknown; error?: string }> {
+  try {
+    const res = await fetch(`${APP_URL}/api/organizations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
 
-		if (!response.ok) throw new Error("Failed to check company head");
+    if (!res.ok) {
+      const text = await res.text();
+      return { success: false, error: text };
+    }
 
-		const data: {
-			head: boolean;
-		} = await response.json();
-
-		return data.head;
-	} catch (error) {
-		throw new Error("Failed to check company head");
-	}
+    const data = await res.json();
+    return { success: true, data: data.data };
+  } catch (err) {
+    console.error("createOrganization error:", err);
+    return { success: false, error: "Failed to create organization" };
+  }
 }
 
-export async function getCompanyMembersAction(userId: string) {
-	try {
-		const response = await fetch(
-			`${BACKEND_URLS["Get All Company Members"]}/${userId}`,
-			{
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
+export async function createCompanyAction(props: {
+	name: string;
+	email?: string;
+	phone?: string;
+	companyDomain?: string;
+	companyHeadId: string;
+	domain?: string;
+}): Promise<unknown> {
+  return createOrganization({
+    name: props.name,
+    email: props.email,
+    phone: props.phone,
+    domain: props.companyDomain || props.domain,
+    headExternalId: props.companyHeadId,
+  });
+}
 
-		if (!response.ok) throw new Error("Failed to fetch company members");
+export async function getOrganizationByUser(
+  userId: string
+): Promise<{ org: unknown | null; isHead: boolean }> {
+  try {
+    const res = await fetch(
+      `${APP_URL}/api/organizations/${encodeURIComponent(userId)}`,
+      { cache: "no-store" }
+    );
 
-		const data: CompanyMember[] = await response.json();
+    if (!res.ok) return { org: null, isHead: false };
 
-		return data;
-	} catch (error) {
-		throw new Error("Failed to fetch company");
-	}
+    const data = await res.json();
+    return data.data ?? { org: null, isHead: false };
+  } catch (err) {
+    console.error("getOrganizationByUser error:", err);
+    return { org: null, isHead: false };
+  }
+}
+
+export async function findCompanyAction(userId: string): Promise<unknown> {
+  const result = await getOrganizationByUser(userId);
+  return result.org;
+}
+
+export async function getCompanyAction(userId: string): Promise<unknown> {
+  const result = await getOrganizationByUser(userId);
+  return result.org;
+}
+
+export async function checkIfCompanyHeadAction(userId: string): Promise<boolean> {
+  const result = await getOrganizationByUser(userId);
+  return result.isHead;
+}
+
+export async function getCompanyMembersAction(userId: string): Promise<CompanyMember[]> {
+  try {
+    const res = await fetch(
+      `${APP_URL}/api/organizations/${encodeURIComponent(userId)}`,
+      { cache: "no-store" }
+    );
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    return data.data?.org?.members ?? [];
+  } catch (err) {
+    console.error("getCompanyMembersAction error:", err);
+    return [];
+  }
 }

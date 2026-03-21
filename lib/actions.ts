@@ -1,6 +1,6 @@
 "use server"
 
-import { findUserById } from "@/actions/auth-actions"
+import { findUser } from "@/actions/auth-actions"
 import { getAuth } from "@/lib/auth"
 import { revalidateTag } from "next/cache"
 import {redirect} from "next/navigation"
@@ -16,24 +16,21 @@ export async function createApiKey() {
     if (!userId) return redirect("/auth/login");
 
     try {
-        const data = await findUserById(userId);
+        const data = await findUser(userId);
 
         if (!data) {
             throw new Error("User not found or invalid response");
         }
 
-        const companyId = data.companyId;
-
         const response = await fetch(
-            `${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/create`,
+            `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/api-keys`,
             {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    userId: userId,
-                    companyId: companyId,
+                    name: "Generated API Key",
                 }),
             }
         );
@@ -42,7 +39,7 @@ export async function createApiKey() {
 
         revalidateTag("apikeys");
         const responseData = await response.json();
-        return { success: true, apiKey: responseData.apiKey };
+        return { success: true, apiKey: responseData.data?.key };
 
     } catch (error) {
         console.error("Error:", error);
@@ -55,16 +52,8 @@ export async function getApiKeys() {
     if (!userId) return redirect("/auth/login");
 
     try {
-      const data = await findUserById(userId);
-
-        if (!data) {
-            throw new Error("User not found or invalid response");
-        }
-
-        const companyId = data.companyId;
-
-        const response = await fetch(
-            `${process.env.DEEPTRACK_BACKEND_URL}/v1/users/api-keys/${userId}/${companyId}`,
+      const response = await fetch(
+            `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/api-keys`,
             {
               method: "GET",
                 headers: {
@@ -74,6 +63,7 @@ export async function getApiKeys() {
             }
         )
 
+        if (!response.ok) return [];
         const responseData = await response.json();
 
         return responseData;
@@ -90,18 +80,18 @@ export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
 				if (!userId) return redirect("/auth/login");
 
 				try {
-					const userData = await findUserById(userId);
-					if (!userData?.companyId) {
-						throw new Error("Company ID not found");
+					const userData = await findUser(userId);
+					if (!userData) {
+						throw new Error("User not found");
 					}
 
 					const apiKeys = await getApiKeys();
 
 					// get the active DeepTrack API key
 					const deepTrackKey =
-						apiKeys.find((key: { status: string }) => key.status === "Active")
+						apiKeys.find((key: any) => key.status === "Active")
 							?.apiKey ||
-						apiKeys.find((key: { status: string }) => key.status === "Active")
+						apiKeys.find((key: any) => key.status === "Active")
 							?.key;
 
 					if (!deepTrackKey) {
@@ -112,7 +102,7 @@ export async function verifyIdentityServerSide(uploadedImages: UploadedImages) {
 
 					// Make the API request with proper credentials
 					const response = await fetch(
-						`${process.env.DEEPTRACK_BACKEND_URL}/v1/kyc/deeptrackai-id`,
+						`${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/api/kyc/verify`,
 						{
 							method: "POST",
 							headers: {
