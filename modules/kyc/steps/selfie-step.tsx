@@ -26,9 +26,13 @@ interface SelfieStepProps {
 type Mode = "choose" | "camera" | "upload" | "preview";
 
 async function uploadToUploadthing(file: File): Promise<string> {
-  const res = await uploadFiles("kycUploader", { files: [file] });
-  if (!res || res.length === 0) throw new Error("Upload failed");
-  return res[0].url;
+  try {
+    const res = await uploadFiles("kycUploader", { files: [file] });
+    if (!res || res.length === 0) throw new Error("Upload failed");
+    return res[0].url;
+  } catch (error) {
+    throw new Error(`Selfie upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+  }
 }
 
 export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {

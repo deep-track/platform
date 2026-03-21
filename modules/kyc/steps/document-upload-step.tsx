@@ -60,8 +60,8 @@ function FileDropZone({
       setError("Please upload an image (JPG, PNG) or PDF file.");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setError("File must be under 10MB.");
+    if (file.size > 16 * 1024 * 1024) {
+      setError("File must be under 16MB.");
       return;
     }
 

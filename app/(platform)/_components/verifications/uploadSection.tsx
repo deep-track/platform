@@ -63,7 +63,7 @@ export const UploadSection = ({
                 <p className="text-sm text-gray-500 mt-1">{description}</p>
                 <div className="mt-2 w-full">
                     <FileUpload
-                        endpoint="imageUploader"
+                        endpoint="kycUploader"
                         onChange={onUpload}
                         onProgress={onProgress}
                         onError={onError}
