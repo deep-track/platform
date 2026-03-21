@@ -140,7 +140,11 @@ export function buildShuftiRequest(params: {
   expiryDate?: string;
   issueDate?: string;
 }): ShuftiVerificationRequest {
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || "http://localhost:3001").replace(/\/$/, "");
+  const appUrl = (
+    process.env.APP_BASE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://platform-one-sable.vercel.app"
+  ).replace(/\/$/, "");
   const callbackUrl = `${appUrl}/api/webhooks/shufti`;
   console.log("[Shufti] Building request with callback_url:", callbackUrl);
 
