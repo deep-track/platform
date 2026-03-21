@@ -13,29 +13,30 @@ function isRecoverableMiddlewareError(error: unknown) {
 	);
 }
 
-       const { auth0, isAuth0Configured } = getAuth0();
-       if (!isAuth0Configured || !auth0) {
-	       return NextResponse.next();
-       }
+export function middleware(request: NextRequest) {
+	const { auth0, isAuth0Configured } = getAuth0();
+	if (!isAuth0Configured || !auth0) {
+		return NextResponse.next();
+	}
 
-       try {
-	       return await auth0.middleware(request);
-       } catch (error) {
-	       if (!isRecoverableMiddlewareError(error)) {
-		       throw error;
-	       }
+	try {
+		return auth0.middleware(request);
+	} catch (error) {
+		if (!isRecoverableMiddlewareError(error)) {
+			throw error;
+		}
 
-	       const response = NextResponse.next();
-	       const cookies = request.cookies.getAll();
+		const response = NextResponse.next();
+		const cookies = request.cookies.getAll();
 
-	       for (const cookie of cookies) {
-		       if (cookie.name === "appSession" || cookie.name.startsWith("appSession.")) {
-			       response.cookies.set(cookie.name, "", { path: "/", maxAge: 0 });
-		       }
-	       }
+		for (const cookie of cookies) {
+			if (cookie.name === "appSession" || cookie.name.startsWith("appSession.")) {
+				response.cookies.set(cookie.name, "", { path: "/", maxAge: 0 });
+			}
+		}
 
-	       return response;
-       }
+		return response;
+	}
 }
 
 export const config = {

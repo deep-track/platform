@@ -1,4 +1,4 @@
-import { auth0, isAuth0Configured } from "@/lib/auth0";
+import { getAuth0 } from "@/lib/auth0";
 
 export type AppRole = "user" | "admin" | "head";
 
@@ -27,17 +27,18 @@ function isRecoverableSessionError(error: unknown) {
 }
 
 async function safeGetSession() {
-	if (!isAuth0Configured || !auth0) return null;
+       const { auth0, isAuth0Configured } = getAuth0();
+       if (!isAuth0Configured || !auth0) return null;
 
-	try {
-		return await auth0.getSession();
-	} catch (error) {
-		if (isRecoverableSessionError(error)) {
-			console.warn("Ignoring invalid Auth0 session cookie.");
-			return null;
-		}
-		throw error;
-	}
+       try {
+	       return await auth0.getSession();
+       } catch (error) {
+	       if (isRecoverableSessionError(error)) {
+		       console.warn("Ignoring invalid Auth0 session cookie.");
+		       return null;
+	       }
+	       throw error;
+       }
 }
 
 function getClaimValue(user: Record<string, unknown>, key: string) {
