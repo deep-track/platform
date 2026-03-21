@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Upload, X, FileCheck, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { uploadFiles } from "@/lib/uploadthing";
 import Image from "next/image";
 
 interface DocumentUploadStepProps {
@@ -31,6 +32,12 @@ const DOCUMENT_TYPES = [
 ] as const;
 
 type DocType = "passport" | "id_card" | "driving_license";
+
+async function uploadToUploadthing(file: File): Promise<string> {
+  const res = await uploadFiles("kycUploader", { files: [file] });
+  if (!res || res.length === 0) throw new Error("Upload failed");
+  return res[0].url;
+}
 
 function FileDropZone({
   label,
@@ -62,19 +69,7 @@ function FileDropZone({
     setUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/uploadthing", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
-
-      const uploadedUrl = data?.url ?? data?.[0]?.url;
-      if (!uploadedUrl) throw new Error("No URL returned from upload");
+      const uploadedUrl = await uploadToUploadthing(file);
 
       onChange(uploadedUrl);
     } catch (err) {

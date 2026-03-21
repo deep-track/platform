@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { uploadFiles } from "@/lib/uploadthing";
 
 interface SelfieStepProps {
   defaultValues?: Partial<SelfieData>;
@@ -24,21 +25,10 @@ interface SelfieStepProps {
 
 type Mode = "choose" | "camera" | "upload" | "preview";
 
-async function uploadToUploadthing(blob: Blob, filename: string): Promise<string> {
-  const file = new File([blob], filename, { type: blob.type || "image/jpeg" });
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const res = await fetch("/api/uploadthing", {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!res.ok) throw new Error("Upload failed");
-  const data = await res.json();
-  const url = data?.url ?? data?.[0]?.url;
-  if (!url) throw new Error("No URL from upload");
-  return url;
+async function uploadToUploadthing(file: File): Promise<string> {
+  const res = await uploadFiles("kycUploader", { files: [file] });
+  if (!res || res.length === 0) throw new Error("Upload failed");
+  return res[0].url;
 }
 
 export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
@@ -112,7 +102,8 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
         return;
       }
       try {
-        const url = await uploadToUploadthing(blob, "selfie.jpg");
+        const file = new File([blob], "selfie.jpg", { type: blob.type || "image/jpeg" });
+        const url = await uploadToUploadthing(file);
         setSelfieUrl(url);
         setMode("preview");
       } catch {
@@ -133,7 +124,7 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
       return;
     }
     try {
-      const url = await uploadToUploadthing(file, file.name);
+      const url = await uploadToUploadthing(file);
       setSelfieUrl(url);
       setMode("preview");
     } catch {
