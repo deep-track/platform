@@ -9,8 +9,41 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status");
     const page = parseInt(searchParams.get("page") ?? "1");
     const limit = parseInt(searchParams.get("limit") ?? "20");
+    const requestedUserId = searchParams.get("userId");
 
-    const where = status ? { status } : {};
+    let externalId: string | null = null;
+    let userRole: string = "user";
+
+    try {
+      const auth = await getAuth();
+      externalId = auth?.userId ?? null;
+    } catch {
+      externalId = null;
+    }
+
+    if (!externalId) {
+      externalId = requestedUserId ?? null;
+    }
+
+    if (!externalId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { externalId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ status: 200, data: { records: [], total: 0 } });
+    }
+
+    userRole = user.role;
+    const isAdmin = userRole === "admin" || userRole === "head";
+
+    const where = {
+      ...(status ? { status } : {}),
+      ...(!isAdmin ? { userId: user.id } : {}),
+    };
 
     const [records, total] = await Promise.all([
       prisma.kYCRecord.findMany({
@@ -25,9 +58,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ status: 200, data: { records, total } });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[GET /api/kyc] FULL ERROR:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[GET /api/kyc]", err);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
 

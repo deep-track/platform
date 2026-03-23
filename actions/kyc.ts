@@ -111,10 +111,14 @@ export async function getKYCList(params?: {
     if (!BACKEND) {
       return { success: true, data: { records: [], total: 0 } };
     }
+    const auth = await getAuth();
+    if (!auth?.userId) return { success: false, error: "Not authenticated" };
+
     const qs = new URLSearchParams();
     if (params?.status) qs.set("status", params.status);
     if (params?.page) qs.set("page", String(params.page));
     if (params?.limit) qs.set("limit", String(params.limit ?? 20));
+    qs.set("userId", auth.userId);
 
     const res = await fetch(`${BACKEND}/api/kyc?${qs.toString()}`, {
       headers: { "Content-Type": "application/json" },

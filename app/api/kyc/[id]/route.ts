@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAuth } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
@@ -7,6 +8,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    let externalId: string | null = null;
+    try {
+      const auth = await getAuth();
+      externalId = auth?.userId ?? null;
+    } catch {
+      externalId = null;
+    }
+
     const record = await prisma.kYCRecord.findUnique({
       where: { id },
       include: { user: true },
@@ -14,6 +24,25 @@ export async function GET(
 
     if (!record) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (externalId) {
+      const requestingUser = await prisma.user.findUnique({
+        where: { externalId },
+      });
+
+      const isAdmin =
+        requestingUser?.role === "admin" ||
+        requestingUser?.role === "head";
+
+      const isOwner = record.user.externalId === externalId;
+
+      if (!isAdmin && !isOwner) {
+        return NextResponse.json(
+          { error: "Forbidden" },
+          { status: 403 }
+        );
+      }
     }
 
     return NextResponse.json({ status: 200, data: record });

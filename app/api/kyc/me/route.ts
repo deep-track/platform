@@ -9,9 +9,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const requestedUserId = searchParams.get("userId");
-    const externalUserId = requestedUserId ?? auth.userId;
+    const externalUserId = auth.userId;
 
     const user = await prisma.user.findUnique({
       where: { externalId: externalUserId },
