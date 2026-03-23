@@ -14,18 +14,19 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  externalId   String   @unique
-  email        String   @unique
-  fullName     String?
-  role         String   @default("user")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  headOf       Organization?        @relation("CompanyHead")
-  memberships  OrganizationMember[]
-  apiKeys      APIKey[]
-  kycRecords   KYCRecord[]
-  kyiRecords   KYIRecord[]
+  id                   String   @id @default(cuid())
+  externalId           String   @unique
+  email                String   @unique
+  fullName             String?
+  role                 String   @default("user")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  headOf               Organization?        @relation("CompanyHead")
+  memberships          OrganizationMember[]
+  apiKeys              APIKey[]
+  kycRecords           KYCRecord[]
+  kyiRecords           KYIRecord[]
+  clientMemberships    ClientMember[]
 }
 
 model Organization {
@@ -149,4 +150,199 @@ model KYIInvitation {
   invitedBy    String
   expiresAt    DateTime
   createdAt    DateTime @default(now())
+}
+
+// ── Client Organisation ──────────────────────────────────
+model ClientOrganization {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  domain          String?
+  plan            String   @default("starter")
+  scanCredits     Int      @default(0)
+  scanCreditsUsed Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  members         ClientMember[]
+  apiKeys         ClientAPIKey[]
+  webhooks        ClientWebhook[]
+  verifications   Verification[]
+  auditLogs       AuditLog[]
+  reports         Report[]
+  alerts          AlertRule[]
+}
+
+// ── Client Team Member ───────────────────────────────────
+model ClientMember {
+  id             String             @id @default(cuid())
+  orgId          String
+  userId         String
+  role           ClientRole
+  isActive       Boolean            @default(true)
+  invitedBy      String?
+  lastLoginAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  org            ClientOrganization @relation(fields: [orgId], references: [id])
+  user           User               @relation(fields: [userId], references: [id])
+  @@unique([orgId, userId])
+}
+
+enum ClientRole {
+  CLIENT_ADMIN
+  COMPLIANCE_ANALYST
+  DEVELOPER
+  VIEWER
+}
+
+// ── Verification Case ────────────────────────────────────
+model Verification {
+  id              String             @id @default(cuid())
+  caseId          String             @unique @default(cuid())
+  orgId           String
+  type            VerificationType
+  status          VerificationStatus @default(STARTED)
+  subjectName     String?
+  subjectRef      String?
+  assignedTo      String?
+  sentinelScore   Float?
+  sentinelOutcome SentinelOutcome?
+  documents       Json?
+  flags           Json?
+  metadata        Json?
+  reviewedBy      String?
+  reviewNotes     String?
+  extractedData   Json?
+  declineReason   String?
+  documentType    String?
+  documentFrontUrl String?
+  documentBackUrl  String?
+  selfieUrl       String?
+  shuftiReference String?
+  shuftiEventType String?
+  invitationToken String?
+  completedAt     DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  org             ClientOrganization @relation(fields: [orgId], references: [id])
+  telemetryEvents TelemetryEvent[]
+}
+
+enum VerificationType {
+  KYC
+  KYB
+  KYI
+}
+
+enum VerificationStatus {
+  STARTED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  ESCALATED
+  EXPIRED
+}
+
+enum SentinelOutcome {
+  PASS
+  REVIEW
+  REJECT
+}
+
+// ── Audit Log ────────────────────────────────────────────
+model AuditLog {
+  id          String             @id @default(cuid())
+  logId       String             @unique @default(cuid())
+  orgId       String
+  eventType   String
+  actorId     String?
+  actorRole   String?
+  targetType  String?
+  targetId    String?
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime           @default(now())
+  org         ClientOrganization @relation(fields: [orgId], references: [id])
+}
+
+// ── Telemetry Event ──────────────────────────────────────
+model TelemetryEvent {
+  id             String        @id @default(cuid())
+  eventId        String        @unique @default(cuid())
+  eventType      String
+  eventVersion   String        @default("1.0")
+  orgId          String
+  actorType      String
+  actorId        String?
+  sessionId      String?
+  environment    String        @default("production")
+  source         String
+  traceId        String?
+  properties     Json?
+  context        Json?
+  verificationId String?
+  timestamp      DateTime      @default(now())
+  verification   Verification? @relation(fields: [verificationId], references: [id])
+}
+
+// ── Client API Key ───────────────────────────────────────
+model ClientAPIKey {
+  id          String             @id @default(cuid())
+  orgId       String
+  name        String
+  key         String             @unique
+  isRevoked   Boolean            @default(false)
+  lastUsedAt  DateTime?
+  usageCount  Int                @default(0)
+  errorCount  Int                @default(0)
+  createdBy   String?
+  createdAt   DateTime           @default(now())
+  org         ClientOrganization @relation(fields: [orgId], references: [id])
+}
+
+// ── Webhook ──────────────────────────────────────────────
+model ClientWebhook {
+  id           String             @id @default(cuid())
+  orgId        String
+  url          String
+  events       String[]
+  isActive     Boolean            @default(true)
+  secret       String
+  retryCount   Int                @default(3)
+  lastStatus   Int?
+  lastDelivery DateTime?
+  failCount    Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  org          ClientOrganization @relation(fields: [orgId], references: [id])
+}
+
+// ── Report ───────────────────────────────────────────────
+model Report {
+  id          String             @id @default(cuid())
+  orgId       String
+  type        String
+  format      String
+  filters     Json?
+  generatedBy String?
+  fileUrl     String?
+  status      String             @default("pending")
+  createdAt   DateTime           @default(now())
+  org         ClientOrganization @relation(fields: [orgId], references: [id])
+}
+
+// ── Alert Rule ───────────────────────────────────────────
+model AlertRule {
+  id          String             @id @default(cuid())
+  orgId       String
+  alertType   String
+  threshold   Float
+  severity    String
+  channels    String[]
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  org         ClientOrganization @relation(fields: [orgId], references: [id])
 }
