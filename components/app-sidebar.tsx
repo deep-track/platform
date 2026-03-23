@@ -21,6 +21,7 @@ import {
 	Search,
 	Settings,
 	ShieldCheck,
+	TrendingUp,
 	User2,
 } from "lucide-react";
 import Image from "next/image";
@@ -35,6 +36,7 @@ const getItems = (role: "user" | "admin" | "head") => {
 	const baseItems = [
 		{ title: "Home", url: "/dashboard", icon: Home },
 		{ title: "KYC", url: "/kyc", icon: ShieldCheck },
+		{ title: "KYI", url: "/kyi", icon: TrendingUp },
 		// { title: "Insights", url: "/insights", icon: Database },
 		{ title: "API Keys", url: "/api-keys", icon: Key },
 		// { title: "Settings", url: "#", icon: Settings },
