@@ -17,10 +17,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const newStatus = mapShuftiEventToStatus(payload.event);
 
     const appUrl = process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || APP_URL;
-    const isKYI = payload.reference.startsWith("KYI-");
-    const endpoint = isKYI
-      ? `${appUrl}/api/kyi/by-reference/${payload.reference}`
-      : `${appUrl}/api/kyc/by-reference/${payload.reference}`;
+    const endpoint = `${appUrl}/api/kyc/by-reference/${payload.reference}`;
 
     const response = await fetch(endpoint, {
       method: "PATCH",

@@ -25,7 +25,6 @@ model User {
   memberships  OrganizationMember[]
   apiKeys      APIKey[]
   kycRecords   KYCRecord[]
-  kyiRecords   KYIRecord[]
 }
 
 model Organization {
@@ -39,7 +38,6 @@ model Organization {
   members   OrganizationMember[]
   apiKeys   APIKey[]
   kycRecords KYCRecord[]
-  kyiRecords KYIRecord[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -100,37 +98,4 @@ model KYCInvitation {
   invitedBy String
   expiresAt DateTime
   createdAt DateTime @default(now())
-}
-
-model KYIRecord {
-  id                    String        @id @default(cuid())
-  reference             String        @unique
-  userId                String
-  organizationId        String?
-  status                String        @default("pending")
-  institutionInfo       Json
-  representative        Json
-  documents             Json
-  shuftiEventType       String?
-  shuftiVerificationUrl String?
-  declineReason         String?
-  reviewNotes           String?
-  invitationToken       String?
-  submittedAt           DateTime?
-  reviewedAt            DateTime?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  user                  User          @relation(fields: [userId], references: [id])
-  organization          Organization? @relation(fields: [organizationId], references: [id])
-}
-
-model KYIInvitation {
-  id              String   @id @default(cuid())
-  email           String
-  institutionName String?
-  token           String   @unique @default(cuid())
-  status          String   @default("pending")
-  invitedBy       String
-  expiresAt       DateTime
-  createdAt       DateTime @default(now())
 }
