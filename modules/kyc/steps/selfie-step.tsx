@@ -92,53 +92,65 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
 
     canvas.toBlob(async (blob) => {
       if (!blob) {
-        setError("Failed to capture photo. Please try again.");
-        setMode("camera");
+        setError("Failed to capture. Please try again.");
+        setMode("choose");
         return;
       }
-      try {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-        setSelfieBase64(base64);
 
+      setMode("upload");
+
+      try {
         const file = new File([blob], "selfie.jpg", { type: "image/jpeg" });
-        const uploaded = await uploadFiles("kycUploader", { files: [file] });
-        if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
-        setSelfieUrl(uploaded[0].ufsUrl ?? uploaded[0].url);
+
+        const [base64Result, uploadResult] = await Promise.all([
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          }),
+          uploadFiles("kycUploader", { files: [file] }),
+        ]);
+
+        const url = uploadResult[0]?.ufsUrl ?? uploadResult[0]?.url;
+        if (!url) throw new Error("No URL returned");
+
+        setSelfieUrl(url);
+        setSelfieBase64(base64Result);
         setMode("preview");
       } catch {
         setError("Upload failed. Please retake your photo.");
         setMode("choose");
       }
-    }, "image/jpeg", 0.92);
+    }, "image/jpeg", 0.95);
   }, [stopCamera]);
 
   async function handleFileUpload(file: File) {
     setError(null);
     if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file (JPG, PNG, WEBP).");
+      setError("Please upload an image file.");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      setError("Image must be under 8MB.");
+    if (file.size > 16 * 1024 * 1024) {
+      setError("Image must be under 16MB.");
       return;
     }
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      setSelfieBase64(base64);
+      const [base64Result, uploadResult] = await Promise.all([
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }),
+        uploadFiles("kycUploader", { files: [file] }),
+      ]);
 
-      const uploaded = await uploadFiles("kycUploader", { files: [file] });
-      if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
-      setSelfieUrl(uploaded[0].ufsUrl ?? uploaded[0].url);
+      const url = uploadResult[0]?.ufsUrl ?? uploadResult[0]?.url;
+      if (!url) throw new Error("No URL returned");
+
+      setSelfieUrl(url);
+      setSelfieBase64(base64Result);
       setMode("preview");
     } catch {
       setError("Upload failed. Please try again.");
@@ -155,11 +167,15 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
   }
 
   function handleNext() {
-    if (!selfieUrl) {
+    if (!selfieUrl || !selfieBase64) {
       setError("Please provide a selfie to continue.");
       return;
     }
-    onNext({ selfieUrl, selfieBase64 });
+    onNext({
+      selfieUrl,
+      selfieBase64,
+      isVideo: false,
+    });
   }
 
   return (
@@ -167,8 +183,7 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
       <div>
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Selfie Photo</h3>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Take or upload a clear photo of your face. After submitting, you will be
-          redirected to a short live verification session powered by Shufti Pro.
+          Take or upload a clear photo of your face for secured verification.
         </p>
       </div>
 
@@ -181,12 +196,10 @@ export function SelfieStep({ defaultValues, onNext, onBack }: SelfieStepProps) {
           </div>
           <div>
             <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-              Live verification follows
+              Identity checks happen securely in the background
             </p>
             <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
-              After you submit, Shufti Pro will open a short liveness session
-              in this window. Keep your camera ready and follow the on-screen
-              instructions.
+              After you submit, we continue verification while you remain on DeepTrack.
             </p>
           </div>
         </div>

@@ -128,16 +128,26 @@ export function buildShuftiRequest(params: {
   email: string;
   country: string;
   documentType: ShuftiDocumentType;
+  documentFrontBase64: string;
+  documentBackBase64?: string;
+  selfieBase64: string;
+  isVideo?: boolean;
   firstName?: string;
   lastName?: string;
   middleName?: string;
   dateOfBirth?: string;
   gender?: string;
+  documentNumber?: string;
+  expiryDate?: string;
+  issueDate?: string;
 }): ShuftiVerificationRequest {
   const appUrl =
     process.env.APP_BASE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://platform-one-sable.vercel.app";
+    "https://your-app.onrender.com";
+
+  const stripPrefix = (b64: string) =>
+    b64.includes(",") ? b64.split(",")[1] : b64;
 
   return {
     reference: params.reference,
@@ -146,9 +156,12 @@ export function buildShuftiRequest(params: {
     country: params.country.toUpperCase().slice(0, 2),
     language: "EN",
     email: params.email,
-    verification_mode: "any",
+    verification_mode: "image_only",
     document: {
-      proof: "",
+      proof: stripPrefix(params.documentFrontBase64),
+      ...(params.documentBackBase64 && {
+        additional_proof: stripPrefix(params.documentBackBase64),
+      }),
       supported_types: [params.documentType],
       name: {
         first_name: params.firstName,
@@ -157,9 +170,12 @@ export function buildShuftiRequest(params: {
       },
       dob: params.dateOfBirth,
       gender: params.gender,
+      document_number: params.documentNumber,
+      expiry_date: params.expiryDate,
+      issue_date: params.issueDate,
     },
     face: {
-      proof: "",
+      proof: stripPrefix(params.selfieBase64),
     },
   };
 }

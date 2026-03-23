@@ -80,7 +80,7 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
               }}
             >
               <Button variant="outline" size="sm" type="submit">
-                <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh from Shufti
+                <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh verification status
               </Button>
             </form>
             {(record.status === "processing" || record.status === "requires_review") && (
@@ -208,7 +208,7 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
               <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Verification Details</h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-slate-500">Shufti Event</p>
+                  <p className="text-xs text-slate-500">Verification Event</p>
                   <p className="text-sm text-slate-700 dark:text-slate-300 font-mono mt-0.5">{record.shuftiEventType ?? "—"}</p>
                 </div>
                 <div>
@@ -232,7 +232,7 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-violet-600 dark:text-violet-400 hover:underline"
                   >
-                    View on Shufti Pro <ExternalLink className="h-3 w-3" />
+                    View verification details <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
               </div>

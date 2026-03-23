@@ -26,7 +26,7 @@ function requireBackend() {
 
 export async function submitKYC(
   payload: KYCSubmitPayload,
-): Promise<KYCActionResult<{ kycId: string; reference: string; verificationUrl: string }>> {
+): Promise<KYCActionResult<{ kycId: string; reference: string }>> {
   try {
     const auth = await getAuth();
     if (!auth?.userId) return { success: false, error: "Not authenticated" };
@@ -41,20 +41,32 @@ export async function submitKYC(
       email: payload.personalInfo.email,
       country: payload.personalInfo.address.country,
       documentType: payload.document.documentType,
+      documentFrontBase64: payload.document.documentFrontBase64 ?? "",
+      documentBackBase64: payload.document.documentBackBase64,
+      selfieBase64: payload.selfie.selfieBase64 ?? "",
       firstName: payload.personalInfo.firstName,
       lastName: payload.personalInfo.lastName,
       middleName: payload.personalInfo.middleName,
       dateOfBirth: payload.personalInfo.dateOfBirth,
       gender: payload.personalInfo.gender,
+      documentNumber: payload.document.documentNumber,
+      expiryDate: payload.document.expiryDate,
+      issueDate: payload.document.issueDate,
     });
 
     const shuftiResponse = await createShuftiVerification(shuftiRequest);
 
-    if (!shuftiResponse.verification_url) {
-      throw new Error(
-        "Shufti did not return a verification URL. " + JSON.stringify(shuftiResponse),
-      );
-    }
+    console.log("[submitKYC] Shufti response:", {
+      event: shuftiResponse.event,
+      reference: shuftiResponse.reference,
+    });
+
+    const initialStatus =
+      shuftiResponse.event === "verification.accepted"
+        ? "approved"
+        : shuftiResponse.event === "verification.declined"
+          ? "declined"
+          : "processing";
 
     const appUrl =
       process.env.APP_BASE_URL ||
@@ -71,9 +83,12 @@ export async function submitKYC(
         userName: currentUser.fullName,
         personalInfo: payload.personalInfo,
         documentType: payload.document.documentType,
-        status: "pending",
+        documentFrontUrl: payload.document.documentFrontUrl,
+        documentBackUrl: payload.document.documentBackUrl,
+        selfieUrl: payload.selfie.selfieUrl,
+        status: initialStatus,
         shuftiEventType: shuftiResponse.event,
-        shuftiVerificationUrl: shuftiResponse.verification_url,
+        shuftiVerificationUrl: null,
         invitationToken: payload.invitationToken,
       }),
     });
@@ -90,7 +105,6 @@ export async function submitKYC(
       data: {
         kycId: data.id,
         reference,
-        verificationUrl: shuftiResponse.verification_url,
       },
     };
   } catch (err) {

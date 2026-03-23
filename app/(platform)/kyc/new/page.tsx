@@ -24,7 +24,7 @@ export default async function NewKYCPage({ searchParams }: NewKYCPageProps) {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Identity Verification</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm max-w-xl">
-            Complete the steps below to verify your identity. Your data is secured and processed through Shufti Pro.
+            Complete the steps below to verify your identity. Your data is secured and processed through our verification partner.
           </p>
 
           {invitationToken && (

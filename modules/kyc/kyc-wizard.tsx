@@ -1,19 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type {
   KYCWizardData,
   PersonalInfoData,
   DocumentUploadData,
+  SelfieData,
+  KYCStatus,
 } from "@/lib/kyc-types";
-import { submitKYC } from "@/actions/kyc";
+import { getKYCRecord, submitKYC } from "@/actions/kyc";
 import { PersonalInfoStep } from "@/modules/kyc/steps/personal-info-step";
 import { DocumentUploadStep } from "@/modules/kyc/steps/document-upload-step";
+import { SelfieStep } from "@/modules/kyc/steps/selfie-step";
 import { ReviewStep } from "@/modules/kyc/steps/review-step";
-import { CheckCircle, User, FileText, ClipboardCheck } from "lucide-react";
+import { CheckCircle, User, FileText, ClipboardCheck, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { KYCStatusBadge } from "@/modules/kyc/kyc-status-badge";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 interface KYCWizardProps {
   invitationToken?: string;
@@ -22,16 +27,19 @@ interface KYCWizardProps {
 
 const STEPS = [
   { id: 0, title: "Personal Info", icon: User, shortTitle: "Personal" },
-  { id: 1, title: "Document Type", icon: FileText, shortTitle: "Document" },
-  { id: 2, title: "Review & Submit", icon: ClipboardCheck, shortTitle: "Review" },
+  { id: 1, title: "Document Upload", icon: FileText, shortTitle: "Document" },
+  { id: 2, title: "Selfie", icon: Camera, shortTitle: "Selfie" },
+  { id: 3, title: "Review & Submit", icon: ClipboardCheck, shortTitle: "Review" },
 ];
 
 export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
-  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<KYCWizardData>({});
-  const [, setSubmittedKycId] = useState<string | null>(null);
-  const [, setSubmittedRef] = useState<string | null>(null);
+  const [submittedKycId, setSubmittedKycId] = useState<string | null>(null);
+  const [submittedRef, setSubmittedRef] = useState<string | null>(null);
+  const [completed, setCompleted] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<KYCStatus>("processing");
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   function handlePersonalInfo(info: PersonalInfoData) {
     setData((d) => ({ ...d, personalInfo: info }));
@@ -45,8 +53,14 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function handleSelfie(selfie: SelfieData) {
+    setData((d) => ({ ...d, selfie }));
+    setCurrentStep(3);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function handleSubmit() {
-    if (!data.personalInfo || !data.document) {
+    if (!data.personalInfo || !data.document || !data.selfie) {
       toast.error("Please complete all steps before submitting.");
       return;
     }
@@ -54,7 +68,7 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
     const result = await submitKYC({
       personalInfo: data.personalInfo,
       document: data.document,
-      selfie: { selfieUrl: "" },
+      selfie: data.selfie,
       invitationToken,
     });
 
@@ -65,10 +79,52 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
 
     setSubmittedKycId(result.data.kycId);
     setSubmittedRef(result.data.reference);
-    toast.success("Redirecting to secure verification...");
-    setTimeout(() => {
-      window.location.href = result.data.verificationUrl;
-    }, 1000);
+    setLiveStatus("processing");
+    setCompleted(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  useEffect(() => {
+    if (!completed || !submittedKycId) return;
+
+    pollRef.current = setInterval(async () => {
+      const result = await getKYCRecord(submittedKycId);
+      if (!result.success || !result.data) return;
+
+      setLiveStatus(result.data.status);
+      if (["approved", "declined", "expired"].includes(result.data.status)) {
+        if (pollRef.current) clearInterval(pollRef.current);
+      }
+    }, 3000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [completed, submittedKycId]);
+
+  if (completed) {
+    return (
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center space-y-4">
+        <div className="mx-auto h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+          <CheckCircle className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Verification Submitted</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Reference: <code className="font-mono">{submittedRef}</code>
+        </p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          We are verifying your documents. This page updates automatically.
+        </p>
+        <div className="flex justify-center">
+          <KYCStatusBadge status={liveStatus} />
+        </div>
+        <div className="pt-2">
+          <Button asChild className="bg-violet-600 hover:bg-violet-700 text-white">
+            <Link href="/kyc">Back to KYC Dashboard</Link>
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -145,10 +201,17 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
           />
         )}
         {currentStep === 2 && (
+          <SelfieStep
+            defaultValues={data.selfie}
+            onNext={handleSelfie}
+            onBack={() => setCurrentStep(1)}
+          />
+        )}
+        {currentStep === 3 && (
           <ReviewStep
             data={data}
             onSubmit={handleSubmit}
-            onBack={() => setCurrentStep(1)}
+            onBack={() => setCurrentStep(2)}
             onEdit={(step: number) => setCurrentStep(step)}
           />
         )}

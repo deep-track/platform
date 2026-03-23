@@ -22,9 +22,11 @@ export const documentUploadSchema = z.object({
   documentType: z.enum(["passport", "id_card", "driving_license"], {
     required_error: "Document type is required",
   }),
+  // UploadThing URLs for database storage
   documentFrontUrl: z.string().min(1, "Front of document is required"),
-  documentFrontBase64: z.string().optional(),
   documentBackUrl: z.string().optional(),
+  // Base64 for Shufti submission
+  documentFrontBase64: z.string().min(1, "Front image data required"),
   documentBackBase64: z.string().optional(),
   documentNumber: z.string().optional(),
   expiryDate: z.string().optional(),
@@ -32,8 +34,12 @@ export const documentUploadSchema = z.object({
 });
 
 export const selfieSchema = z.object({
-  selfieUrl: z.string().min(1, "Selfie image is required"),
-  selfieBase64: z.string().optional(),
+  // UploadThing URL for database storage
+  selfieUrl: z.string().min(1, "Selfie is required"),
+  // Base64 for Shufti submission
+  selfieBase64: z.string().min(1, "Selfie image data required"),
+  // true if video was recorded, false if photo
+  isVideo: z.boolean().default(false),
 });
 
 export type PersonalInfoData = z.infer<typeof personalInfoSchema>;
