@@ -1,5 +1,6 @@
 import { getClientSession } from "@/lib/client-auth";
 import prisma from "@/lib/prisma";
+import { VerificationType } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,11 @@ export async function GET(req: NextRequest) {
 
     const searchParams = req.nextUrl.searchParams;
     const timeRange = searchParams.get("timeRange") ?? "7d";
-    const type = searchParams.get("type");
+    const typeParam = searchParams.get("type");
+    
+    // Validate type is a valid VerificationType
+    const validTypes: VerificationType[] = ["KYC", "KYB", "KYI"];
+    const type = typeParam && validTypes.includes(typeParam as VerificationType) ? (typeParam as VerificationType) : undefined;
 
     let fromDate = new Date();
     if (timeRange === "today") {

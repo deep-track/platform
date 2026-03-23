@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getClientSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,7 +17,7 @@ export async function GET(
 
     const verification = await prisma.verification.findFirst({
       where: {
-        id: params.id,
+        id: id,
         orgId: session.orgId,
       },
       include: {
@@ -42,9 +43,10 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getClientSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,7 +54,7 @@ export async function PATCH(
 
     const verification = await prisma.verification.findFirst({
       where: {
-        id: params.id,
+        id: id,
         orgId: session.orgId,
       },
     });
@@ -65,7 +67,7 @@ export async function PATCH(
     const { assignedTo, reviewNotes } = body;
 
     const updated = await prisma.verification.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         ...(assignedTo !== undefined && { assignedTo }),
         ...(reviewNotes !== undefined && { reviewNotes }),

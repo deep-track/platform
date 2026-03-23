@@ -1,15 +1,17 @@
 import { getClientSession, ROLES, requireRoles } from "@/lib/client-auth";
 import { auditLog } from "@/lib/telemetry";
 import prisma from "@/lib/prisma";
+import { VerificationStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getClientSession();
     if (
       !session ||
@@ -20,7 +22,7 @@ export async function POST(
 
     const verification = await prisma.verification.findFirst({
       where: {
-        id: params.id,
+        id: id,
         orgId: session.orgId,
       },
     });
@@ -47,7 +49,7 @@ export async function POST(
       );
     }
 
-    const statusMap: Record<string, string> = {
+    const statusMap: Record<string, VerificationStatus> = {
       approve: "APPROVED",
       reject: "REJECTED",
       escalate: "ESCALATED",
@@ -55,7 +57,7 @@ export async function POST(
     };
 
     const updated = await prisma.verification.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         status: statusMap[decision],
         reviewedBy: session.userId,
@@ -72,7 +74,7 @@ export async function POST(
       actorId: session.userId,
       actorRole: session.role,
       targetType: "verification",
-      targetId: params.id,
+      targetId: id,
       after: { status: statusMap[decision], reviewNotes: notes },
     });
 

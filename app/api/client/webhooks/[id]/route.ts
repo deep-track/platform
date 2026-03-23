@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getClientSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,7 +19,7 @@ export async function PATCH(
     const { url, events, isActive } = body;
 
     const updated = await prisma.clientWebhook.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         ...(url && { url }),
         ...(events && { events }),
@@ -38,16 +39,17 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getClientSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await prisma.clientWebhook.delete({
-      where: { id: params.id },
+      where: { id: id },
     });
 
     return NextResponse.json({ success: true });

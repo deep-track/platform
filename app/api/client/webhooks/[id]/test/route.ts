@@ -5,9 +5,10 @@ export const dynamic = "force-dynamic";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getClientSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

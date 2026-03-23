@@ -7,9 +7,10 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getClientSession();
     if (!session || !requireRoles(session, ROLES.ADMIN_ONLY)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -19,7 +20,7 @@ export async function PATCH(
     const { role, isActive } = body;
 
     const updated = await prisma.clientMember.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(role && { role }),
         ...(isActive !== undefined && { isActive }),
@@ -32,7 +33,7 @@ export async function PATCH(
       actorId: session.userId,
       actorRole: session.role,
       targetType: "user",
-      targetId: params.id,
+      targetId: id,
       after: { role, isActive },
     });
 
