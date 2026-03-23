@@ -16,7 +16,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const newStatus = mapShuftiEventToStatus(payload.event);
 
-    const response = await fetch(`${APP_URL}/api/kyc/by-reference/${payload.reference}`, {
+    const appUrl = process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || APP_URL;
+    const isKYI = payload.reference.startsWith("KYI-");
+    const endpoint = isKYI
+      ? `${appUrl}/api/kyi/by-reference/${payload.reference}`
+      : `${appUrl}/api/kyc/by-reference/${payload.reference}`;
+
+    const response = await fetch(endpoint, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -24,8 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       body: JSON.stringify({
         status: newStatus,
         shuftiEventType: payload.event,
-        declineReason: payload.declined_reason,
-        verificationResult: payload.verification_result,
+        declineReason: payload.declined_reason ?? null,
       }),
     });
 

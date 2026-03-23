@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TypographyP, TypographySmall } from "@/components/ui/typography";
 import {
+	Building2,
 	Database,
 	Home,
 	Key,
@@ -35,6 +36,7 @@ const getItems = (role: "user" | "admin" | "head") => {
 	const baseItems = [
 		{ title: "Home", url: "/dashboard", icon: Home },
 		{ title: "KYC", url: "/kyc", icon: ShieldCheck },
+		{ title: "KYI", url: "/kyi", icon: Building2 },
 		// { title: "Insights", url: "/insights", icon: Database },
 		{ title: "API Keys", url: "/api-keys", icon: Key },
 		// { title: "Settings", url: "#", icon: Settings },
