@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -17,7 +18,16 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, CheckCircle, Upload, Loader2, FileText } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  CheckCircle,
+  FileText,
+  Loader2,
+  RefreshCw,
+  Upload,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface InvestorDocumentsStepProps {
@@ -32,15 +42,19 @@ function UploadField({
   label,
   hint,
   value,
+  base64Value,
   required,
   uploading,
+  accept,
   onUpload,
 }: {
   label: string;
   hint: string;
   value?: string;
+  base64Value?: string;
   required?: boolean;
   uploading: boolean;
+  accept?: string;
   onUpload: (file: File) => Promise<void>;
 }) {
   return (
@@ -56,7 +70,7 @@ function UploadField({
         <input
           type="file"
           className="sr-only"
-          accept="image/*,.pdf"
+          accept={accept ?? "image/*,.pdf"}
           disabled={uploading}
           onChange={async (event) => {
             const file = event.target.files?.[0];
@@ -69,14 +83,10 @@ function UploadField({
       </label>
 
       {value && (
-        <a
-          href={value}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
-        >
-          <CheckCircle className="h-3.5 w-3.5" /> Uploaded successfully
-        </a>
+        <div className="inline-flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+          <CheckCircle className="h-3.5 w-3.5" />
+          Uploaded successfully{base64Value ? " • image data captured" : ""}
+        </div>
       )}
     </div>
   );
@@ -90,12 +100,25 @@ const GOVERNMENT_IDS: { value: GovernmentDocType; label: string; hint: string }[
 
 export function InvestorDocumentsStep({ defaultValues, onNext, onBack }: InvestorDocumentsStepProps) {
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [selfieMode, setSelfieMode] = useState<"choose" | "camera" | "upload" | "preview">(
+    defaultValues?.selfieUrl ? "preview" : "choose",
+  );
+  const [selfieError, setSelfieError] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const form = useForm<InvestorDocumentsData>({
     resolver: zodResolver(investorDocumentsSchema),
     defaultValues: {
       governmentIdUrl: "",
+      governmentIdBase64: "",
       governmentIdType: "passport",
+      selfieUrl: "",
+      selfieBase64: "",
       bankStatementUrl: "",
       proofOfAddressUrl: "",
       proofOfNetWorthUrl: "",
@@ -106,16 +129,146 @@ export function InvestorDocumentsStep({ defaultValues, onNext, onBack }: Investo
     },
   });
 
-  async function uploadToField(field: keyof InvestorDocumentsData, file: File) {
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraActive(false);
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    setSelfieError(null);
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setCameraError("Camera is not supported in this browser. Upload an image instead.");
+      return;
+    }
+
+    try {
+      stopCamera();
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCameraActive(true);
+    } catch {
+      stopCamera();
+      setCameraError("Camera access denied. Please allow camera access or upload an image.");
+    }
+  }, [stopCamera]);
+
+  useEffect(() => {
+    return () => stopCamera();
+  }, [stopCamera]);
+
+  async function uploadToField(
+    field: keyof InvestorDocumentsData,
+    file: File,
+    base64Field?: keyof InvestorDocumentsData,
+  ) {
     try {
       setUploadingField(field);
-      const uploaded = await uploadFiles("kycUploader", { files: [file] });
-      if (!uploaded || uploaded.length === 0) throw new Error("Upload failed");
-      form.setValue(field, uploaded[0].ufsUrl ?? uploaded[0].url, { shouldValidate: true });
+      const [base64Result, uploadResult] = await Promise.all([
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }),
+        uploadFiles("kycUploader", { files: [file] }),
+      ]);
+
+      const url = uploadResult[0]?.ufsUrl ?? uploadResult[0]?.url;
+      if (!url) throw new Error("Upload failed");
+
+      form.setValue(field, url, { shouldValidate: true });
+      if (base64Field) {
+        form.setValue(base64Field, base64Result, { shouldValidate: true });
+      }
     } catch {
       form.setError(field, { type: "manual", message: "Upload failed. Try again." });
     } finally {
       setUploadingField(null);
+    }
+  }
+
+  const captureSelfie = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    canvas.getContext("2d")?.drawImage(videoRef.current, 0, 0);
+    stopCamera();
+    setSelfieMode("upload");
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        setSelfieError("Failed to capture. Please try again.");
+        setSelfieMode("choose");
+        return;
+      }
+
+      try {
+        const file = new File([blob], "kyi-selfie.jpg", { type: "image/jpeg" });
+        const [base64Result, uploadResult] = await Promise.all([
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          }),
+          uploadFiles("kycUploader", { files: [file] }),
+        ]);
+
+        const url = uploadResult[0]?.ufsUrl ?? uploadResult[0]?.url;
+        if (!url) throw new Error("No URL returned");
+
+        form.setValue("selfieUrl", url, { shouldValidate: true });
+        form.setValue("selfieBase64", base64Result, { shouldValidate: true });
+        setSelfieMode("preview");
+      } catch {
+        setSelfieError("Upload failed. Please retake your photo.");
+        setSelfieMode("choose");
+      }
+    }, "image/jpeg", 0.95);
+  }, [form, stopCamera]);
+
+  async function handleSelfieFileUpload(file: File) {
+    setSelfieError(null);
+    if (!file.type.startsWith("image/")) {
+      setSelfieError("Please upload an image file.");
+      return;
+    }
+    if (file.size > 16 * 1024 * 1024) {
+      setSelfieError("Image must be under 16MB.");
+      return;
+    }
+
+    try {
+      setSelfieMode("upload");
+      const [base64Result, uploadResult] = await Promise.all([
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }),
+        uploadFiles("kycUploader", { files: [file] }),
+      ]);
+
+      const url = uploadResult[0]?.ufsUrl ?? uploadResult[0]?.url;
+      if (!url) throw new Error("No URL returned");
+
+      form.setValue("selfieUrl", url, { shouldValidate: true });
+      form.setValue("selfieBase64", base64Result, { shouldValidate: true });
+      setSelfieMode("preview");
+    } catch {
+      setSelfieError("Upload failed. Please try again.");
+      setSelfieMode("choose");
     }
   }
 
@@ -169,9 +322,10 @@ export function InvestorDocumentsStep({ defaultValues, onNext, onBack }: Investo
                     label="Government ID"
                     hint="Matches the type selected above"
                     value={field.value}
+                    base64Value={form.watch("governmentIdBase64")}
                     required
                     uploading={uploadingField === "governmentIdUrl"}
-                    onUpload={(file) => uploadToField("governmentIdUrl", file)}
+                    onUpload={(file) => uploadToField("governmentIdUrl", file, "governmentIdBase64")}
                   />
                 </FormControl>
                 <FormMessage />
@@ -218,6 +372,108 @@ export function InvestorDocumentsStep({ defaultValues, onNext, onBack }: Investo
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Selfie Verification</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">A clear photo of your face for identity matching</p>
+
+          {selfieMode === "choose" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelfieMode("camera");
+                  startCamera();
+                }}
+                className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-violet-400 dark:border-slate-700 p-6 transition-all"
+              >
+                <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                  <Camera className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                </div>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Use Camera</p>
+              </button>
+
+              <label className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-slate-200 hover:border-violet-400 dark:border-slate-700 p-6 transition-all cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void handleSelfieFileUpload(file);
+                  }}
+                />
+                <div className="h-10 w-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <Upload className="h-5 w-5 text-slate-500" />
+                </div>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Upload Image</p>
+              </label>
+            </div>
+          )}
+
+          {selfieMode === "camera" && (
+            <div className="space-y-3 max-w-md">
+              {cameraError && <p className="text-xs text-red-600 dark:text-red-400">{cameraError}</p>}
+              <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-black">
+                <video ref={videoRef} className="w-full h-auto" playsInline muted />
+              </div>
+              <canvas ref={canvasRef} className="hidden" />
+              <div className="flex gap-2">
+                <Button type="button" onClick={() => void captureSelfie()} disabled={!cameraActive} className="bg-violet-600 hover:bg-violet-700 text-white">
+                  <Camera className="mr-2 h-4 w-4" /> Capture
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    stopCamera();
+                    setSelfieMode("choose");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {selfieMode === "upload" && (
+            <div className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <Loader2 className="h-4 w-4 animate-spin" /> Processing selfie...
+            </div>
+          )}
+
+          {selfieMode === "preview" && (
+            <div className="space-y-3 max-w-md">
+              <div className="h-52 w-40 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative bg-slate-100 dark:bg-slate-800">
+                {form.watch("selfieUrl") && (
+                  <Image src={form.watch("selfieUrl")} alt="Selfie preview" fill className="object-cover" />
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                <CheckCircle className="h-3.5 w-3.5" /> Selfie captured and image data prepared
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  form.setValue("selfieUrl", "", { shouldValidate: true });
+                  form.setValue("selfieBase64", "", { shouldValidate: true });
+                  setSelfieMode("choose");
+                }}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" /> Retake / Reupload
+              </Button>
+            </div>
+          )}
+
+          {selfieError && <p className="text-xs text-red-600 dark:text-red-400">{selfieError}</p>}
+          {form.formState.errors.selfieUrl && (
+            <p className="text-xs text-red-600 dark:text-red-400">{form.formState.errors.selfieUrl.message}</p>
+          )}
+          {form.formState.errors.selfieBase64 && (
+            <p className="text-xs text-red-600 dark:text-red-400">{form.formState.errors.selfieBase64.message}</p>
+          )}
         </div>
 
         <div className="space-y-4">

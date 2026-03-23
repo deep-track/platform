@@ -5,6 +5,7 @@ export const investorProfileSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   middleName: z.string().optional(),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
+  gender: z.enum(["M", "F", "O"]).optional(),
   nationality: z.string().min(2, "Nationality is required"),
   countryOfResidence: z.string().min(2, "Country of residence is required"),
   email: z.string().email("Valid email required"),
@@ -54,8 +55,14 @@ export const investorProfileSchema = z.object({
 });
 
 export const investorDocumentsSchema = z.object({
+  // Government ID
   governmentIdUrl: z.string().min(1, "Government ID is required"),
+  governmentIdBase64: z.string().min(1, "Government ID image data required"),
   governmentIdType: z.enum(["passport", "national_id", "driving_license"]),
+  // Selfie
+  selfieUrl: z.string().min(1, "Selfie is required"),
+  selfieBase64: z.string().min(1, "Selfie image data required"),
+  // Financial proof
   bankStatementUrl: z.string().min(1, "Bank statement is required"),
   proofOfNetWorthUrl: z.string().optional(),
   accreditationLetterUrl: z.string().optional(),

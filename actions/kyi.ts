@@ -40,11 +40,19 @@ export async function submitKYI(
       reference,
       email: payload.investorProfile.email,
       country: payload.investorProfile.countryOfResidence,
-      documentType: "passport",
+      documentType:
+        payload.documents.governmentIdType === "national_id"
+          ? "id_card"
+          : payload.documents.governmentIdType === "driving_license"
+            ? "driving_license"
+            : "passport",
+      documentFrontBase64: payload.documents.governmentIdBase64,
+      selfieBase64: payload.documents.selfieBase64,
       firstName: payload.investorProfile.firstName,
       lastName: payload.investorProfile.lastName,
       middleName: payload.investorProfile.middleName,
       dateOfBirth: payload.investorProfile.dateOfBirth,
+      gender: payload.investorProfile.gender,
     });
 
     const appUrl =
@@ -52,26 +60,14 @@ export async function submitKYI(
       process.env.NEXT_PUBLIC_APP_URL ||
       "https://platform-one-sable.vercel.app";
 
-    shuftiRequest.redirect_url = `${appUrl}/kyi`;
-    shuftiRequest.document = {
-      proof: "",
-      supported_types: ["passport", "id_card", "driving_license"],
-      name: {
-        first_name: payload.investorProfile.firstName,
-        last_name: payload.investorProfile.lastName,
-        middle_name: payload.investorProfile.middleName,
-      },
-      dob: payload.investorProfile.dateOfBirth,
-    };
-    shuftiRequest.face = undefined;
-
     const shuftiResponse = await createShuftiVerification(shuftiRequest);
 
-    if (!shuftiResponse.verification_url) {
-      throw new Error(
-        "Shufti did not return a verification URL. " + JSON.stringify(shuftiResponse),
-      );
-    }
+    const initialStatus =
+      shuftiResponse.event === "verification.accepted"
+        ? "approved"
+        : shuftiResponse.event === "verification.declined"
+          ? "declined"
+          : "processing";
 
     const res = await fetch(`${appUrl}/api/kyi`, {
       method: "POST",
@@ -89,9 +85,9 @@ export async function submitKYI(
         investmentAmount: payload.investorProfile.investmentAmount,
         investmentCurrency: payload.investorProfile.investmentCurrency,
         sourceOfFunds: payload.investorProfile.sourceOfFunds,
-        status: "pending",
+        status: initialStatus,
         shuftiEventType: shuftiResponse.event,
-        shuftiVerificationUrl: shuftiResponse.verification_url,
+        shuftiVerificationUrl: null,
         invitationToken: payload.invitationToken,
       }),
     });
@@ -109,7 +105,7 @@ export async function submitKYI(
       data: {
         kyiId: data.id,
         reference,
-        verificationUrl: shuftiResponse.verification_url,
+        verificationUrl: "",
       },
     };
   } catch (err) {
