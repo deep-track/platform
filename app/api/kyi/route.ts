@@ -106,22 +106,29 @@ export async function POST(req: NextRequest) {
 
     const orgId = user.headOf?.id ?? user.memberships[0]?.organizationId ?? null;
 
-    const profile = body.investorProfile ?? {};
-
     const record = await prisma.kYIRecord.create({
       data: {
         reference: body.reference,
         userId: user.id,
         organizationId: orgId,
         status: body.status ?? "processing",
-        investorProfile: body.investorProfile,
-        documents: body.documents,
-        isPEP: body.isPEP ?? profile.isPEP ?? false,
-        accreditationStatus: body.accreditationStatus ?? profile.accreditationStatus,
-        investorType: body.investorType ?? profile.investorType,
-        investmentAmount: body.investmentAmount ?? profile.investmentAmount,
-        investmentCurrency: body.investmentCurrency ?? profile.investmentCurrency,
-        sourceOfFunds: body.sourceOfFunds ?? profile.sourceOfFunds,
+        isPEP: body.isPEP ?? false,
+        accreditationStatus: body.accreditationStatus,
+        investorType: body.investorType,
+        investmentAmount: body.investmentAmount,
+        investmentCurrency: body.investmentCurrency,
+        sourceOfFunds: body.sourceOfFunds,
+        governmentIdType: body.governmentIdType,
+        governmentIdUrl: body.governmentIdUrl,
+        selfieUrl: body.selfieUrl,
+        bankStatementUrl: body.bankStatementUrl,
+        proofOfAddressUrl: body.proofOfAddressUrl,
+        proofOfNetWorthUrl: body.proofOfNetWorthUrl,
+        accreditationLetterUrl: body.accreditationLetterUrl,
+        sourceOfFundsDocUrl: body.sourceOfFundsDocUrl,
+        corporateDocUrl: body.corporateDocUrl,
+        extractedData: body.extractedData,
+        verificationResult: body.verificationResult,
         shuftiEventType: body.shuftiEventType,
         shuftiVerificationUrl: body.shuftiVerificationUrl,
         invitationToken: body.invitationToken,

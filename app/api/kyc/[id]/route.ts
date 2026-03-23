@@ -65,6 +65,8 @@ export async function PATCH(
       data: {
         status: body.status,
         shuftiEventType: body.shuftiEventType,
+        extractedData: body.extractedData,
+        verificationResult: body.verificationResult,
         declineReason: body.declineReason,
         reviewNotes: body.reviewNotes,
         reviewedAt: body.status === "approved" || body.status === "declined"

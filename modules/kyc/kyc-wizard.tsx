@@ -2,19 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type {
-  KYCWizardData,
-  PersonalInfoData,
-  DocumentUploadData,
-  SelfieData,
-  KYCStatus,
-} from "@/lib/kyc-types";
+import type { KYCStatus, KYCSubmissionData } from "@/lib/kyc-types";
 import { getKYCRecord, submitKYC } from "@/actions/kyc";
-import { PersonalInfoStep } from "@/modules/kyc/steps/personal-info-step";
-import { DocumentUploadStep } from "@/modules/kyc/steps/document-upload-step";
-import { SelfieStep } from "@/modules/kyc/steps/selfie-step";
-import { ReviewStep } from "@/modules/kyc/steps/review-step";
-import { CheckCircle, User, FileText, ClipboardCheck, Camera } from "lucide-react";
+import { DocumentCaptureStep } from "@/modules/kyc/steps/document-capture-step";
+import { SelfieCaptureStep } from "@/modules/kyc/steps/selfie-capture-step";
+import { SubmitStep } from "@/modules/kyc/steps/submit-step";
+import { CheckCircle, FileText, ClipboardCheck, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KYCStatusBadge } from "@/modules/kyc/kyc-status-badge";
 import Link from "next/link";
@@ -26,49 +19,46 @@ interface KYCWizardProps {
 }
 
 const STEPS = [
-  { id: 0, title: "Personal Info", icon: User, shortTitle: "Personal" },
-  { id: 1, title: "Document Upload", icon: FileText, shortTitle: "Document" },
-  { id: 2, title: "Selfie", icon: Camera, shortTitle: "Selfie" },
-  { id: 3, title: "Review & Submit", icon: ClipboardCheck, shortTitle: "Review" },
+  { id: 0, title: "Document Capture", icon: FileText, shortTitle: "Document" },
+  { id: 1, title: "Selfie Capture", icon: Camera, shortTitle: "Selfie" },
+  { id: 2, title: "Review & Submit", icon: ClipboardCheck, shortTitle: "Submit" },
 ];
 
-export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
+export function KYCWizard({ invitationToken }: KYCWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [data, setData] = useState<KYCWizardData>({});
+  const [data, setData] = useState<Partial<KYCSubmissionData>>({});
   const [submittedKycId, setSubmittedKycId] = useState<string | null>(null);
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [liveStatus, setLiveStatus] = useState<KYCStatus>("processing");
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  function handlePersonalInfo(info: PersonalInfoData) {
-    setData((d) => ({ ...d, personalInfo: info }));
+  function handleDocument(values: Pick<KYCSubmissionData, "documentType" | "documentFrontUrl" | "documentBackUrl" | "documentFrontBase64" | "documentBackBase64">) {
+    setData((d) => ({ ...d, ...values }));
     setCurrentStep(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleDocument(doc: DocumentUploadData) {
-    setData((d) => ({ ...d, document: doc }));
+  function handleSelfie(values: Pick<KYCSubmissionData, "selfieUrl" | "selfieBase64">) {
+    setData((d) => ({ ...d, ...values }));
     setCurrentStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleSelfie(selfie: SelfieData) {
-    setData((d) => ({ ...d, selfie }));
-    setCurrentStep(3);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
   async function handleSubmit() {
-    if (!data.personalInfo || !data.document || !data.selfie) {
+    if (!data.documentType || !data.documentFrontUrl || !data.documentFrontBase64 || !data.selfieUrl || !data.selfieBase64) {
       toast.error("Please complete all steps before submitting.");
       return;
     }
 
     const result = await submitKYC({
-      personalInfo: data.personalInfo,
-      document: data.document,
-      selfie: data.selfie,
+      documentType: data.documentType,
+      documentFrontUrl: data.documentFrontUrl,
+      documentBackUrl: data.documentBackUrl,
+      documentFrontBase64: data.documentFrontBase64,
+      documentBackBase64: data.documentBackBase64,
+      selfieUrl: data.selfieUrl,
+      selfieBase64: data.selfieBase64,
       invitationToken,
     });
 
@@ -188,30 +178,20 @@ export function KYCWizard({ invitationToken, prefillEmail }: KYCWizardProps) {
 
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 sm:p-8">
         {currentStep === 0 && (
-          <PersonalInfoStep
-            defaultValues={prefillEmail ? { ...data.personalInfo, email: prefillEmail } : data.personalInfo}
-            onNext={handlePersonalInfo}
-          />
+          <DocumentCaptureStep defaultValues={data} onNext={handleDocument} />
         )}
         {currentStep === 1 && (
-          <DocumentUploadStep
-            defaultValues={data.document}
-            onNext={handleDocument}
+          <SelfieCaptureStep
+            defaultValues={data}
+            onNext={handleSelfie}
             onBack={() => setCurrentStep(0)}
           />
         )}
         {currentStep === 2 && (
-          <SelfieStep
-            defaultValues={data.selfie}
-            onNext={handleSelfie}
-            onBack={() => setCurrentStep(1)}
-          />
-        )}
-        {currentStep === 3 && (
-          <ReviewStep
+          <SubmitStep
             data={data}
             onSubmit={handleSubmit}
-            onBack={() => setCurrentStep(2)}
+            onBack={() => setCurrentStep(1)}
             onEdit={(step: number) => setCurrentStep(step)}
           />
         )}

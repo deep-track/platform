@@ -35,6 +35,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         status: newStatus,
         shuftiEventType: payload.event,
         declineReason: payload.declined_reason ?? null,
+        extractedData: payload.verification_data,
+        verificationResult: payload.verification_result,
       }),
     });
 

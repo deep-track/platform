@@ -83,7 +83,7 @@ export function KYIReviewClient({ record }: KYIReviewClientProps) {
           <div>
             <p className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-violet-600" />
-              {[record.investorProfile?.firstName, record.investorProfile?.lastName].filter(Boolean).join(" ") || record.userName}
+              {[record.extractedData?.name?.first_name, record.extractedData?.name?.last_name].filter(Boolean).join(" ") || record.userName}
             </p>
             <p className="text-sm text-slate-500 dark:text-slate-400 capitalize">
               {record.investorType?.replace(/_/g, " ")} • {record.userEmail}

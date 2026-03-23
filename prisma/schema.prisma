@@ -73,11 +73,12 @@ model KYCRecord {
   userId                String
   organizationId        String?
   status                String        @default("pending")
-  personalInfo          Json
   documentType          String
   documentFrontUrl      String?
   documentBackUrl       String?
   selfieUrl             String?
+  extractedData         Json?
+  verificationResult    Json?
   shuftiEventType       String?
   shuftiVerificationUrl String?
   declineReason         String?
@@ -108,14 +109,23 @@ model KYIRecord {
   userId                String
   organizationId        String?
   status                String        @default("pending")
-  investorProfile       Json
-  documents             Json
   isPEP                 Boolean       @default(false)
   accreditationStatus   String?
   investorType          String?
   investmentAmount      String?
   investmentCurrency    String?
   sourceOfFunds         String?
+  governmentIdType      String?
+  governmentIdUrl       String?
+  selfieUrl             String?
+  bankStatementUrl      String?
+  proofOfAddressUrl     String?
+  proofOfNetWorthUrl    String?
+  accreditationLetterUrl String?
+  sourceOfFundsDocUrl   String?
+  corporateDocUrl       String?
+  extractedData         Json?
+  verificationResult    Json?
   riskScore             Int?
   shuftiEventType       String?
   shuftiVerificationUrl String?

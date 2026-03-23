@@ -122,7 +122,7 @@ export function KYITable({ records, isLoading }: KYITableProps) {
       ),
       cell: ({ row }) => (
         <span className="text-sm text-slate-600 dark:text-slate-400">
-          {row.original.investmentAmount} {row.original.investorProfile?.investmentCurrency ?? "USD"}
+          {row.original.investmentAmount} {row.original.investmentCurrency ?? "USD"}
         </span>
       ),
     },

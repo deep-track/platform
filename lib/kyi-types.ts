@@ -1,15 +1,6 @@
 import { z } from "zod";
 
-export const investorProfileSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  middleName: z.string().optional(),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  gender: z.enum(["M", "F", "O"]).optional(),
-  nationality: z.string().min(2, "Nationality is required"),
-  countryOfResidence: z.string().min(2, "Country of residence is required"),
-  email: z.string().email("Valid email required"),
-  phone: z.string().min(7, "Phone required"),
+export const kyiSubmissionSchema = z.object({
   investorType: z.enum(
     [
       "individual",
@@ -40,49 +31,37 @@ export const investorProfileSchema = z.object({
     ],
     { required_error: "Source of funds is required" },
   ),
-  sourceOfFundsDetails: z.string().optional(),
   isPEP: z.boolean().default(false),
-  pepDetails: z.string().optional(),
-  hasCriminalRecord: z.boolean().default(false),
-  criminalRecordDetails: z.string().optional(),
-  address: z.object({
-    street: z.string().min(1, "Street is required"),
-    city: z.string().min(1, "City is required"),
-    state: z.string().optional(),
-    postalCode: z.string().optional(),
-    country: z.string().min(2, "Country is required"),
-  }),
-});
-
-export const investorDocumentsSchema = z.object({
-  // Government ID
+  governmentIdType: z.enum(["passport", "national_id", "driving_license"]),
   governmentIdUrl: z.string().min(1, "Government ID is required"),
   governmentIdBase64: z.string().min(1, "Government ID image data required"),
-  governmentIdType: z.enum(["passport", "national_id", "driving_license"]),
-  // Selfie
   selfieUrl: z.string().min(1, "Selfie is required"),
   selfieBase64: z.string().min(1, "Selfie image data required"),
-  // Financial proof
   bankStatementUrl: z.string().min(1, "Bank statement is required"),
+  proofOfAddressUrl: z.string().min(1, "Proof of address is required"),
   proofOfNetWorthUrl: z.string().optional(),
   accreditationLetterUrl: z.string().optional(),
   sourceOfFundsDocUrl: z.string().optional(),
-  proofOfAddressUrl: z.string().min(1, "Proof of address is required"),
   corporateDocUrl: z.string().optional(),
 });
 
-export type InvestorProfileData = z.infer<typeof investorProfileSchema>;
-export type InvestorDocumentsData = z.infer<typeof investorDocumentsSchema>;
+export type KYISubmissionData = z.infer<typeof kyiSubmissionSchema>;
 
-export type KYIWizardData = {
-  investorProfile?: InvestorProfileData;
-  documents?: InvestorDocumentsData;
+export type KYIExtractedData = {
+  name?: { first_name?: string; last_name?: string; middle_name?: string };
+  dob?: string;
+  document_number?: string;
+  expiry_date?: string;
+  issue_date?: string;
+  country?: string;
+  nationality?: string;
+  gender?: string;
+  [key: string]: unknown;
 };
 
 export type KYIStatus =
   | "draft"
   | "pending"
-  | "submitted"
   | "processing"
   | "approved"
   | "declined"
@@ -96,13 +75,23 @@ export type KYIRecord = {
   userEmail: string;
   userName: string;
   status: KYIStatus;
-  investorProfile: InvestorProfileData;
-  documents: InvestorDocumentsData;
   isPEP: boolean;
-  accreditationStatus: string;
-  investorType: string;
-  investmentAmount: string;
-  sourceOfFunds: string;
+  accreditationStatus?: string;
+  investorType?: string;
+  investmentAmount?: string;
+  investmentCurrency?: string;
+  sourceOfFunds?: string;
+  governmentIdType?: string;
+  governmentIdUrl?: string;
+  selfieUrl?: string;
+  bankStatementUrl?: string;
+  proofOfAddressUrl?: string;
+  proofOfNetWorthUrl?: string;
+  accreditationLetterUrl?: string;
+  sourceOfFundsDocUrl?: string;
+  corporateDocUrl?: string;
+  extractedData?: KYIExtractedData;
+  verificationResult?: Record<string, 0 | 1>;
   riskScore?: number;
   declineReason?: string;
   reviewNotes?: string;
@@ -125,11 +114,7 @@ export type KYIInvitation = {
   createdAt: string;
 };
 
-export type KYISubmitPayload = {
-  investorProfile: InvestorProfileData;
-  documents: InvestorDocumentsData;
-  invitationToken?: string;
-};
+export type KYISubmitPayload = KYISubmissionData & { invitationToken?: string };
 
 export type KYIActionResult<T = void> =
   | { success: true; data: T }

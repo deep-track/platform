@@ -7,7 +7,6 @@ export type ShuftiDocumentType = "passport" | "id_card" | "driving_license";
 export type ShuftiVerificationRequest = {
   reference: string;
   callback_url: string;
-  redirect_url?: string;
   country: string;
   language: string;
   email: string;
@@ -131,15 +130,6 @@ export function buildShuftiRequest(params: {
   documentFrontBase64: string;
   documentBackBase64?: string;
   selfieBase64: string;
-  isVideo?: boolean;
-  firstName?: string;
-  lastName?: string;
-  middleName?: string;
-  dateOfBirth?: string;
-  gender?: string;
-  documentNumber?: string;
-  expiryDate?: string;
-  issueDate?: string;
 }): ShuftiVerificationRequest {
   const appUrl =
     process.env.APP_BASE_URL ||
@@ -152,7 +142,6 @@ export function buildShuftiRequest(params: {
   return {
     reference: params.reference,
     callback_url: `${appUrl}/api/webhooks/shufti`,
-    redirect_url: `${appUrl}/kyc/result?reference=${params.reference}`,
     country: params.country.toUpperCase().slice(0, 2),
     language: "EN",
     email: params.email,
@@ -163,16 +152,6 @@ export function buildShuftiRequest(params: {
         additional_proof: stripPrefix(params.documentBackBase64),
       }),
       supported_types: [params.documentType],
-      name: {
-        first_name: params.firstName,
-        last_name: params.lastName,
-        middle_name: params.middleName,
-      },
-      dob: params.dateOfBirth,
-      gender: params.gender,
-      document_number: params.documentNumber,
-      expiry_date: params.expiryDate,
-      issue_date: params.issueDate,
     },
     face: {
       proof: stripPrefix(params.selfieBase64),

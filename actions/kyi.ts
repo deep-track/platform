@@ -26,7 +26,7 @@ function requireBackend() {
 
 export async function submitKYI(
   payload: KYISubmitPayload,
-): Promise<KYIActionResult<{ kyiId: string; reference: string; verificationUrl: string }>> {
+): Promise<KYIActionResult<{ kyiId: string; reference: string }>> {
   try {
     const auth = await getAuth();
     if (!auth?.userId) return { success: false, error: "Not authenticated" };
@@ -38,21 +38,16 @@ export async function submitKYI(
 
     const shuftiRequest = buildShuftiRequest({
       reference,
-      email: payload.investorProfile.email,
-      country: payload.investorProfile.countryOfResidence,
+      email: currentUser.email,
+      country: "US",
       documentType:
-        payload.documents.governmentIdType === "national_id"
+        payload.governmentIdType === "national_id"
           ? "id_card"
-          : payload.documents.governmentIdType === "driving_license"
+          : payload.governmentIdType === "driving_license"
             ? "driving_license"
             : "passport",
-      documentFrontBase64: payload.documents.governmentIdBase64,
-      selfieBase64: payload.documents.selfieBase64,
-      firstName: payload.investorProfile.firstName,
-      lastName: payload.investorProfile.lastName,
-      middleName: payload.investorProfile.middleName,
-      dateOfBirth: payload.investorProfile.dateOfBirth,
-      gender: payload.investorProfile.gender,
+      documentFrontBase64: payload.governmentIdBase64,
+      selfieBase64: payload.selfieBase64,
     });
 
     const appUrl =
@@ -77,14 +72,21 @@ export async function submitKYI(
         userId: auth.userId,
         userEmail: currentUser.email,
         userName: currentUser.fullName,
-        investorProfile: payload.investorProfile,
-        documents: payload.documents,
-        isPEP: payload.investorProfile.isPEP,
-        accreditationStatus: payload.investorProfile.accreditationStatus,
-        investorType: payload.investorProfile.investorType,
-        investmentAmount: payload.investorProfile.investmentAmount,
-        investmentCurrency: payload.investorProfile.investmentCurrency,
-        sourceOfFunds: payload.investorProfile.sourceOfFunds,
+        investorType: payload.investorType,
+        accreditationStatus: payload.accreditationStatus,
+        investmentAmount: payload.investmentAmount,
+        investmentCurrency: payload.investmentCurrency,
+        sourceOfFunds: payload.sourceOfFunds,
+        isPEP: payload.isPEP,
+        governmentIdType: payload.governmentIdType,
+        governmentIdUrl: payload.governmentIdUrl,
+        selfieUrl: payload.selfieUrl,
+        bankStatementUrl: payload.bankStatementUrl,
+        proofOfAddressUrl: payload.proofOfAddressUrl,
+        proofOfNetWorthUrl: payload.proofOfNetWorthUrl,
+        accreditationLetterUrl: payload.accreditationLetterUrl,
+        sourceOfFundsDocUrl: payload.sourceOfFundsDocUrl,
+        corporateDocUrl: payload.corporateDocUrl,
         status: initialStatus,
         shuftiEventType: shuftiResponse.event,
         shuftiVerificationUrl: null,
@@ -105,7 +107,6 @@ export async function submitKYI(
       data: {
         kyiId: data.id,
         reference,
-        verificationUrl: "",
       },
     };
   } catch (err) {

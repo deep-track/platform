@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle, ClipboardCheck, FileCheck2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { InvestorDocumentsData, InvestorProfileData, KYIStatus, KYIWizardData } from "@/lib/kyi-types";
+import type { KYIStatus, KYISubmissionData } from "@/lib/kyi-types";
 import { submitKYI, getKYIRecord } from "@/actions/kyi";
-import { InvestorProfileStep } from "@/modules/kyi/steps/investor-profile-step";
-import { InvestorDocumentsStep } from "@/modules/kyi/steps/investor-documents-step";
-import { KYIReviewStep } from "@/modules/kyi/steps/kyi-review-step";
+import { InvestorClassificationStep } from "@/modules/kyi/steps/investor-classification-step";
+import { InvestorDocumentTypeStep } from "@/modules/kyi/steps/investor-document-type-step";
+import { InvestorCaptureStep } from "@/modules/kyi/steps/investor-capture-step";
+import { InvestorFinancialDocsStep } from "@/modules/kyi/steps/investor-financial-docs-step";
 import { KYIStatusBadge } from "@/modules/kyi/kyi-status-badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -18,14 +19,15 @@ interface KYIWizardProps {
 }
 
 const STEPS = [
-  { id: 0, title: "Investor Profile", icon: User, shortTitle: "Profile" },
-  { id: 1, title: "Documents", icon: FileCheck2, shortTitle: "Documents" },
-  { id: 2, title: "Review & Submit", icon: ClipboardCheck, shortTitle: "Review" },
+  { id: 0, title: "Classification", icon: User, shortTitle: "Classify" },
+  { id: 1, title: "ID Type", icon: ClipboardCheck, shortTitle: "ID Type" },
+  { id: 2, title: "Identity Capture", icon: FileCheck2, shortTitle: "Capture" },
+  { id: 3, title: "Financial Documents", icon: ClipboardCheck, shortTitle: "Submit" },
 ];
 
 export function KYIWizard({ invitationToken }: KYIWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [data, setData] = useState<KYIWizardData>({});
+  const [data, setData] = useState<Partial<KYISubmissionData>>({});
   const [completed, setCompleted] = useState(false);
   const [liveStatus, setLiveStatus] = useState<KYIStatus>("processing");
   const [submittedKyiId, setSubmittedKyiId] = useState<string | null>(null);
@@ -33,27 +35,49 @@ export function KYIWizard({ invitationToken }: KYIWizardProps) {
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
-  function handleProfile(info: InvestorProfileData) {
-    setData((previous) => ({ ...previous, investorProfile: info }));
+  function handleClassification(values: Pick<KYISubmissionData, "investorType" | "accreditationStatus" | "investmentAmount" | "investmentCurrency" | "sourceOfFunds" | "isPEP">) {
+    setData((previous) => ({ ...previous, ...values }));
     setCurrentStep(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function handleDocuments(documents: InvestorDocumentsData) {
-    setData((previous) => ({ ...previous, documents }));
+  function handleDocumentType(values: Pick<KYISubmissionData, "governmentIdType">) {
+    setData((previous) => ({ ...previous, ...values }));
     setCurrentStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function handleSubmit() {
-    if (!data.investorProfile || !data.documents) {
+  function handleIdentityCapture(values: Pick<KYISubmissionData, "governmentIdUrl" | "governmentIdBase64" | "selfieUrl" | "selfieBase64">) {
+    setData((previous) => ({ ...previous, ...values }));
+    setCurrentStep(3);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function handleSubmit(finalDocs: Pick<KYISubmissionData, "bankStatementUrl" | "proofOfAddressUrl" | "proofOfNetWorthUrl" | "accreditationLetterUrl" | "sourceOfFundsDocUrl" | "corporateDocUrl">) {
+    const payload: Partial<KYISubmissionData> = { ...data, ...finalDocs };
+    if (!payload.investorType || !payload.accreditationStatus || !payload.investmentAmount || !payload.investmentCurrency || !payload.sourceOfFunds || payload.isPEP === undefined || !payload.governmentIdType || !payload.governmentIdUrl || !payload.governmentIdBase64 || !payload.selfieUrl || !payload.selfieBase64 || !payload.bankStatementUrl || !payload.proofOfAddressUrl) {
       toast.error("Please complete all steps before submitting.");
       return;
     }
 
     const result = await submitKYI({
-      investorProfile: data.investorProfile,
-      documents: data.documents,
+      investorType: payload.investorType,
+      accreditationStatus: payload.accreditationStatus,
+      investmentAmount: payload.investmentAmount,
+      investmentCurrency: payload.investmentCurrency,
+      sourceOfFunds: payload.sourceOfFunds,
+      isPEP: payload.isPEP,
+      governmentIdType: payload.governmentIdType,
+      governmentIdUrl: payload.governmentIdUrl,
+      governmentIdBase64: payload.governmentIdBase64,
+      selfieUrl: payload.selfieUrl,
+      selfieBase64: payload.selfieBase64,
+      bankStatementUrl: payload.bankStatementUrl,
+      proofOfAddressUrl: payload.proofOfAddressUrl,
+      proofOfNetWorthUrl: payload.proofOfNetWorthUrl,
+      accreditationLetterUrl: payload.accreditationLetterUrl,
+      sourceOfFundsDocUrl: payload.sourceOfFundsDocUrl,
+      corporateDocUrl: payload.corporateDocUrl,
       invitationToken,
     });
 
@@ -64,15 +88,6 @@ export function KYIWizard({ invitationToken }: KYIWizardProps) {
 
     setSubmittedKyiId(result.data.kyiId);
     setSubmittedRef(result.data.reference);
-
-    if (result.data.verificationUrl) {
-      toast.success("Redirecting to secure verification...");
-      setTimeout(() => {
-        window.location.href = result.data.verificationUrl;
-      }, 1000);
-      return;
-    }
-
     setCompleted(true);
     setLiveStatus("processing");
   }
@@ -173,22 +188,29 @@ export function KYIWizard({ invitationToken }: KYIWizardProps) {
       </div>
 
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 sm:p-8">
-        {currentStep === 0 && <InvestorProfileStep defaultValues={data.investorProfile} onNext={handleProfile} />}
+        {currentStep === 0 && <InvestorClassificationStep defaultValues={data} onNext={handleClassification} />}
 
         {currentStep === 1 && (
-          <InvestorDocumentsStep
-            defaultValues={data.documents}
-            onNext={handleDocuments}
+          <InvestorDocumentTypeStep
+            defaultValues={data}
+            onNext={handleDocumentType}
             onBack={() => setCurrentStep(0)}
           />
         )}
 
         {currentStep === 2 && (
-          <KYIReviewStep
-            data={data}
-            onSubmit={handleSubmit}
+          <InvestorCaptureStep
+            defaultValues={data}
+            onNext={handleIdentityCapture}
             onBack={() => setCurrentStep(1)}
-            onEdit={(step) => setCurrentStep(step)}
+          />
+        )}
+
+        {currentStep === 3 && (
+          <InvestorFinancialDocsStep
+            defaultValues={data}
+            onBack={() => setCurrentStep(2)}
+            onSubmit={handleSubmit}
           />
         )}
       </div>

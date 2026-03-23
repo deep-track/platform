@@ -1,61 +1,40 @@
 import { z } from "zod";
 
-export const personalInfoSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  middleName: z.string().optional(),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  gender: z.enum(["M", "F", "O"], { required_error: "Gender is required" }),
-  nationality: z.string().min(2, "Nationality is required"),
-  email: z.string().email("A valid email is required"),
-  phone: z.string().min(7, "Phone number is required"),
-  address: z.object({
-    street: z.string().min(1, "Street address is required"),
-    city: z.string().min(1, "City is required"),
-    state: z.string().optional(),
-    postalCode: z.string().min(1, "Postal code is required"),
-    country: z.string().min(2, "Country is required"),
-  }),
-});
-
-export const documentUploadSchema = z.object({
+export const kycSubmissionSchema = z.object({
   documentType: z.enum(["passport", "id_card", "driving_license"], {
     required_error: "Document type is required",
   }),
-  // UploadThing URLs for database storage
   documentFrontUrl: z.string().min(1, "Front of document is required"),
   documentBackUrl: z.string().optional(),
-  // Base64 for Shufti submission
   documentFrontBase64: z.string().min(1, "Front image data required"),
   documentBackBase64: z.string().optional(),
-  documentNumber: z.string().optional(),
-  expiryDate: z.string().optional(),
-  issueDate: z.string().optional(),
-});
-
-export const selfieSchema = z.object({
-  // UploadThing URL for database storage
   selfieUrl: z.string().min(1, "Selfie is required"),
-  // Base64 for Shufti submission
   selfieBase64: z.string().min(1, "Selfie image data required"),
-  // true if video was recorded, false if photo
-  isVideo: z.boolean().default(false),
 });
 
-export type PersonalInfoData = z.infer<typeof personalInfoSchema>;
-export type DocumentUploadData = z.infer<typeof documentUploadSchema>;
-export type SelfieData = z.infer<typeof selfieSchema>;
+export type KYCSubmissionData = z.infer<typeof kycSubmissionSchema>;
 
-export type KYCWizardData = {
-  personalInfo?: PersonalInfoData;
-  document?: DocumentUploadData;
-  selfie?: SelfieData;
+export type KYCExtractedData = {
+  name?: { first_name?: string; last_name?: string; middle_name?: string };
+  dob?: string;
+  document_number?: string;
+  expiry_date?: string;
+  issue_date?: string;
+  country?: string;
+  gender?: string;
+  nationality?: string;
+  address?: {
+    full_address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+  };
+  [key: string]: unknown;
 };
 
 export type KYCStatus =
   | "draft"
   | "pending"
-  | "submitted"
   | "processing"
   | "approved"
   | "declined"
@@ -75,11 +54,12 @@ export type KYCRecord = {
   expiresAt?: string;
   shuftiEventType?: string;
   shuftiVerificationUrl?: string;
-  personalInfo: PersonalInfoData;
   documentType: string;
   documentFrontUrl?: string;
   documentBackUrl?: string;
   selfieUrl?: string;
+  extractedData?: KYCExtractedData;
+  verificationResult?: Record<string, 0 | 1>;
   declineReason?: string;
   reviewNotes?: string;
   riskScore?: number;
@@ -99,12 +79,7 @@ export type KYCInvitation = {
   createdAt: string;
 };
 
-export type KYCSubmitPayload = {
-  personalInfo: PersonalInfoData;
-  document: DocumentUploadData;
-  selfie: SelfieData;
-  invitationToken?: string;
-};
+export type KYCSubmitPayload = KYCSubmissionData & { invitationToken?: string };
 
 export type ShuftiWebhookPayload = {
   reference: string;
