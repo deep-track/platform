@@ -50,10 +50,10 @@ export async function POST(
     }
 
     const statusMap: Record<string, VerificationStatus> = {
-      approve: "APPROVED",
-      reject: "REJECTED",
-      escalate: "ESCALATED",
-      request_resubmission: "STARTED",
+      approve: VerificationStatus.APPROVED,
+      reject: VerificationStatus.REJECTED,
+      escalate: VerificationStatus.ESCALATED,
+      request_resubmission: VerificationStatus.STARTED,
     };
 
     const updated = await prisma.verification.update({

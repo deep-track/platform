@@ -89,8 +89,12 @@ export function KYCTable({ records, isLoading }: KYCTableProps) {
       ),
       cell: ({ row }) => (
         <div>
-          <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">{row.original.userName}</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{row.original.userEmail}</p>
+          <p className="font-medium text-slate-800 dark:text-slate-200 text-sm">
+            {row.original.userName ||
+             row.original.userEmail?.split("@")[0] ||
+             "Unknown"}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{row.original.userEmail ?? ""}</p>
         </div>
       ),
     },

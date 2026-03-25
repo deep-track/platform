@@ -56,7 +56,13 @@ export async function GET(req: NextRequest) {
       prisma.kYCRecord.count({ where }),
     ]);
 
-    return NextResponse.json({ status: 200, data: { records, total } });
+    const mappedRecords = records.map((r: typeof records[number]) => ({
+      ...r,
+      userName: r.userName || r.user?.fullName || r.user?.email?.split("@")[0] || "Unknown",
+      userEmail: r.userEmail || r.user?.email || "",
+    }));
+
+    return NextResponse.json({ status: 200, data: { records: mappedRecords, total } });
   } catch (err) {
     console.error("[GET /api/kyc]", err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
@@ -118,6 +124,8 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         organizationId: orgId,
         status: body.status ?? "processing",
+        userEmail: body.userEmail ?? user.email ?? "",
+        userName: body.userName ?? user.fullName ?? "",
         documentType: body.documentType,
         documentFrontUrl: body.documentFrontUrl,
         documentBackUrl: body.documentBackUrl,

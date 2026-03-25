@@ -1,11 +1,10 @@
 import { getAuth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import type { ClientRole } from "@prisma/client";
 
 export type ClientSession = {
   userId: string;
   orgId: string;
-  role: ClientRole;
+  role: string;
   orgName: string;
 };
 
@@ -41,7 +40,7 @@ export async function getClientSession(): Promise<ClientSession | null> {
 
 export function requireRoles(
   session: ClientSession | null,
-  allowed: ClientRole[]
+  allowed: string[]
 ): boolean {
   if (!session) return false;
   return allowed.includes(session.role);
@@ -54,8 +53,8 @@ export const ROLES = {
     "COMPLIANCE_ANALYST",
     "DEVELOPER",
     "VIEWER",
-  ] as ClientRole[],
-  ADMIN_ONLY: ["CLIENT_ADMIN"] as ClientRole[],
-  CAN_REVIEW: ["CLIENT_ADMIN", "COMPLIANCE_ANALYST"] as ClientRole[],
-  CAN_DEV: ["CLIENT_ADMIN", "DEVELOPER"] as ClientRole[],
+  ] as string[],
+  ADMIN_ONLY: ["CLIENT_ADMIN"] as string[],
+  CAN_REVIEW: ["CLIENT_ADMIN", "COMPLIANCE_ANALYST"] as string[],
+  CAN_DEV: ["CLIENT_ADMIN", "DEVELOPER"] as string[],
 };

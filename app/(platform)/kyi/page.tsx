@@ -90,12 +90,12 @@ export default async function KYIPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
-          <StatCard label="Total" value={stats.total} icon={FileCheck} tone="slate" />
-          <StatCard label="Approved" value={stats.approved} icon={CheckCircle} tone="green" />
-          <StatCard label="Pending + Processing" value={stats.pending + stats.processing} icon={Clock3} tone="violet" />
-          <StatCard label="Needs Review" value={stats.requires_review} icon={ShieldAlert} tone="orange" />
-          <StatCard label="Declined" value={stats.declined} icon={XCircle} tone="red" />
-          <StatCard label="PEP Count" value={stats.pepCount} icon={TrendingUp} tone="amber" />
+          <StatCard label="Total" value={stats.total ?? 0} icon={FileCheck} tone="slate" />
+          <StatCard label="Approved" value={stats.approved ?? 0} icon={CheckCircle} tone="green" />
+          <StatCard label="Pending + Processing" value={(stats.pending ?? 0) + (stats.processing ?? 0)} icon={Clock3} tone="violet" />
+          <StatCard label="Needs Review" value={stats.requires_review ?? 0} icon={ShieldAlert} tone="orange" />
+          <StatCard label="Declined" value={stats.declined ?? 0} icon={XCircle} tone="red" />
+          <StatCard label="PEP Count" value={stats.pepCount ?? 0} icon={TrendingUp} tone="amber" />
         </div>
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 sm:p-6">

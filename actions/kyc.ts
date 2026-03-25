@@ -63,7 +63,7 @@ export async function submitKYC(
     const appUrl =
       process.env.APP_BASE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
-      "https://platform-one-sable.vercel.app";
+      "https://deeptrack-platform.onrender.com";
 
     const res = await fetch(`${appUrl}/api/kyc`, {
       method: "POST",
@@ -221,7 +221,7 @@ export async function pollShuftiStatus(
     const appUrl =
       process.env.APP_BASE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
-      "https://platform-one-sable.vercel.app";
+      "https://deeptrack-platform.onrender.com";
 
     const res = await fetch(`${appUrl}/api/kyc/${kycId}`, {
       method: "PATCH",
@@ -307,43 +307,18 @@ export async function getKYCStats(): Promise<
   }>
 > {
   try {
-    if (!BACKEND) {
-      return {
-        success: true,
-        data: {
-          total: 0,
-          approved: 0,
-          declined: 0,
-          pending: 0,
-          processing: 0,
-          requires_review: 0,
-        },
-      };
-    }
-    const res = await fetch(`${BACKEND}/api/kyc/stats`, {
-      headers: { "Content-Type": "application/json" },
+    const appUrl =
+      process.env.APP_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://deeptrack-platform.onrender.com";
+
+    const res = await fetch(`${appUrl}/api/kyc/stats`, {
       cache: "no-store",
     });
 
-    if (!res.ok) {
-      if (res.status >= 500) {
-        console.info(`[getKYCStats] upstream unavailable (${res.status})`);
-        return {
-          success: true,
-          data: {
-            total: 0,
-            approved: 0,
-            declined: 0,
-            pending: 0,
-            processing: 0,
-            requires_review: 0,
-          },
-        };
-      }
-      throw new Error(`Backend ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`Stats failed: ${res.status}`);
     const data = await res.json();
-    return { success: true, data };
+    return { success: true, data: data.data };
   } catch (err) {
     console.error("[getKYCStats]", err);
     return { success: false, error: "Failed to fetch KYC stats" };

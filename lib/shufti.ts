@@ -134,7 +134,7 @@ export function buildShuftiRequest(params: {
   const appUrl =
     process.env.APP_BASE_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://your-app.onrender.com";
+    "https://deeptrack-platform.onrender.com";
 
   const stripPrefix = (b64: string) =>
     b64.includes(",") ? b64.split(",")[1] : b64;

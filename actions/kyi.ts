@@ -53,7 +53,7 @@ export async function submitKYI(
     const appUrl =
       process.env.APP_BASE_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||
-      "https://platform-one-sable.vercel.app";
+      "https://deeptrack-platform.onrender.com";
 
     const shuftiResponse = await createShuftiVerification(shuftiRequest);
 
@@ -275,47 +275,18 @@ export async function getKYIStats(): Promise<
   }>
 > {
   try {
-    if (!BACKEND) {
-      return {
-        success: true,
-        data: {
-          total: 0,
-          approved: 0,
-          declined: 0,
-          pending: 0,
-          processing: 0,
-          requires_review: 0,
-          pepCount: 0,
-        },
-      };
-    }
+    const appUrl =
+      process.env.APP_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://deeptrack-platform.onrender.com";
 
-    const res = await fetch(`${BACKEND}/api/kyi/stats`, {
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch(`${appUrl}/api/kyi/stats`, {
       cache: "no-store",
     });
 
-    if (!res.ok) {
-      if (res.status >= 500) {
-        console.info(`[getKYIStats] upstream unavailable (${res.status})`);
-        return {
-          success: true,
-          data: {
-            total: 0,
-            approved: 0,
-            declined: 0,
-            pending: 0,
-            processing: 0,
-            requires_review: 0,
-            pepCount: 0,
-          },
-        };
-      }
-      throw new Error(`Backend ${res.status}`);
-    }
-
-    const responseBody = await res.json();
-    return { success: true, data: responseBody?.data };
+    if (!res.ok) throw new Error(`Stats failed: ${res.status}`);
+    const data = await res.json();
+    return { success: true, data: data.data };
   } catch (err) {
     console.error("[getKYIStats]", err);
     return { success: false, error: "Failed to fetch KYI stats" };

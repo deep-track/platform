@@ -78,6 +78,8 @@ model KYCRecord {
   documentFrontUrl      String?
   documentBackUrl       String?
   selfieUrl             String?
+  userName              String?
+  userEmail             String?
   extractedData         Json?
   verificationResult    Json?
   shuftiEventType       String?
@@ -125,6 +127,8 @@ model KYIRecord {
   accreditationLetterUrl String?
   sourceOfFundsDocUrl   String?
   corporateDocUrl       String?
+  userName              String?
+  userEmail             String?
   extractedData         Json?
   verificationResult    Json?
   riskScore             Int?

@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Calculate SLA status for each case
-    const casesWithSLA = cases.map((c) => {
+    const casesWithSLA = cases.map((c: typeof cases[number]) => {
       const ageMs = Date.now() - c.createdAt.getTime();
       const ageHours = ageMs / (1000 * 60 * 60);
 

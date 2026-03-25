@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
 
     let avgCompletionTimeMs = 0;
     if (completedVerifications.length > 0) {
-      const totalTime = completedVerifications.reduce((sum, v) => {
+      const totalTime = completedVerifications.reduce((sum: number, v: typeof completedVerifications[number]) => {
         if (!v.completedAt) return sum;
         return sum + (v.completedAt.getTime() - v.createdAt.getTime());
       }, 0);
@@ -110,18 +110,21 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      started,
-      completed,
-      approved,
-      rejected,
-      pendingReview,
-      escalated,
-      expired,
-      conversionRate: parseFloat(conversionRate.toFixed(1)),
-      manualReviewRate: parseFloat(manualReviewRate.toFixed(1)),
-      avgCompletionTimeMs,
+      started: started || 0,
+      completed: completed || 0,
+      approved: approved || 0,
+      rejected: rejected || 0,
+      pendingReview: pendingReview || 0,
+      escalated: escalated || 0,
+      expired: expired || 0,
+      conversionRate: isFinite(conversionRate) ? parseFloat(conversionRate.toFixed(1)) : 0,
+      manualReviewRate: isFinite(manualReviewRate) ? parseFloat(manualReviewRate.toFixed(1)) : 0,
+      avgCompletionTimeMs: avgCompletionTimeMs || 0,
       byType,
-      recentEvents,
+      recentEvents: recentEvents.map((event: typeof recentEvents[number]) => ({
+        eventType: event.eventType || "Unknown Event",
+        timestamp: event.timestamp.toISOString(),
+      })),
     });
   } catch (err) {
     console.error("[GET /api/client/verifications/stats]", err);

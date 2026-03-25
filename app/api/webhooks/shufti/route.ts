@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { mapShuftiEventToStatus } from "@/lib/shufti";
 import type { ShuftiWebhookPayload } from "@/lib/kyc-types";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://deeptrack-platform.onrender.com";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {

@@ -1,211 +1,293 @@
-"use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
-import { TimeRangeSelector } from "./_components/time-range-selector";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpIcon, ArrowDownIcon, Activity, CheckCircle, TrendingUp, AlertCircle, Clock, XCircle } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import Link from "next/link";
+import { getKYCStats, getKYCList } from "@/actions/kyc";
+import { getKYIStats } from "@/actions/kyi";
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertCircle,
+  Users,
+  TrendingUp,
+} from "lucide-react";
 
-type TimeRange = "today" | "7d" | "30d" | "custom";
+export default async function DashboardPage() {
+  // Fetch real data in parallel
+  const [kycStatsResult, kyiStatsResult, kycListResult] = await Promise.all([
+    getKYCStats(),
+    getKYIStats(),
+    getKYCList({ limit: 10 }),
+  ]);
 
-interface MetricData {
-  started: number;
-  completed: number;
-  approved: number;
-  rejected: number;
-  pendingReview: number;
-  escalated: number;
-  expired: number;
-  conversionRate: number;
-  manualReviewRate: number;
-  avgCompletionTimeMs: number;
-  byType: { KYC: number; KYB: number; KYI: number };
-  recentEvents: Array<{ eventType: string; timestamp: string }>;
-}
+  const kycStats = kycStatsResult.success ? kycStatsResult.data : null;
+  const kyiStats = kyiStatsResult.success ? kyiStatsResult.data : null;
+  const recentKYC = kycListResult.success ? kycListResult.data.records : [];
 
-interface FunnelData {
-  stages: Array<{ name: string; count: number; drop: string | number }>;
-}
+  const totalVerifications =
+    (kycStats?.total ?? 0) + (kyiStats?.total ?? 0);
+  const totalApproved =
+    (kycStats?.approved ?? 0) + (kyiStats?.approved ?? 0);
+  const totalDeclined =
+    (kycStats?.declined ?? 0) + (kyiStats?.declined ?? 0);
+  const totalPending =
+    (kycStats?.pending ?? 0) +
+    (kycStats?.processing ?? 0) +
+    (kyiStats?.pending ?? 0) +
+    (kyiStats?.processing ?? 0);
+  const totalNeedsReview =
+    (kycStats?.requires_review ?? 0) + (kyiStats?.requires_review ?? 0);
 
-function MetricCard({
-  title,
-  value,
-  icon: Icon,
-  trend,
-  sparkline,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  trend?: { value: number; direction: "up" | "down" };
-  sparkline?: number[];
-}) {
+  const conversionRate =
+    totalVerifications > 0
+      ? Math.round((totalApproved / totalVerifications) * 100)
+      : 0;
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
-          {title}
-        </CardTitle>
-        <div className="h-8 w-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-          <Icon className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+    <div className="flex flex-col gap-8 p-6 lg:p-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          Dashboard
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Overview of all verification activity
+        </p>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 space-y-3">
+          <div className="h-9 w-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <Users className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
+              {totalVerifications.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Total Verifications
+            </p>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
-        {trend && (
-          <div className="flex items-center text-xs">
-            {trend.direction === "up" ? (
-              <ArrowUpIcon className="h-3 w-3 text-emerald-600 mr-1" />
-            ) : (
-              <ArrowDownIcon className="h-3 w-3 text-red-600 mr-1" />
-            )}
-            <span
-              className={trend.direction === "up" ? "text-emerald-600" : "text-red-600"}
+
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 space-y-3">
+          <div className="h-9 w-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
+              {totalApproved.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Approved
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 space-y-3">
+          <div className="h-9 w-9 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+            <Clock className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
+              {totalPending.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Pending
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 space-y-3">
+          <div className="h-9 w-9 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+            <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
+              {totalNeedsReview.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Needs Review
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 space-y-3">
+          <div className="h-9 w-9 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
+              {totalDeclined.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Declined
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 space-y-3">
+          <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
+              {conversionRate}%
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Conversion Rate
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* KYC vs KYI breakdown */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* KYC Summary */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">
+              KYC Overview
+            </h2>
+            <a
+              href="/kyc"
+              className="text-xs text-violet-600 dark:text-violet-400 hover:underline"
             >
-              {Math.abs(trend.value)}% vs last period
-            </span>
+              View all →
+            </a>
           </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-export default function Dashboard() {
-  const [timeRange, setTimeRange] = useState<TimeRange>("7d");
-  const [metrics, setMetrics] = useState<MetricData | null>(null);
-  const [funnel, setFunnel] = useState<FunnelData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const [metricsRes, funnelRes] = await Promise.all([
-          fetch(`/api/client/verifications/stats?timeRange=${timeRange}`),
-          fetch(`/api/client/verifications/funnel?timeRange=${timeRange}`),
-        ]);
-
-        if (metricsRes.ok) {
-          setMetrics(await metricsRes.json());
-        }
-        if (funnelRes.ok) {
-          setFunnel(await funnelRes.json());
-        }
-      } catch (err) {
-        console.error("Failed to fetch dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [timeRange]);
-
-  function formatTime(ms: number): string {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}m ${seconds}s`;
-  }
-
-  return (
-    <div className="min-h-full bg-slate-50 dark:bg-slate-950 py-8 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-            Verification Dashboard
-          </h1>
-          <TimeRangeSelector onChange={setTimeRange} />
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Total", value: kycStats?.total ?? 0 },
+              { label: "Approved", value: kycStats?.approved ?? 0 },
+              { label: "Declined", value: kycStats?.declined ?? 0 },
+              { label: "Processing", value: kycStats?.processing ?? 0 },
+              { label: "Needs Review", value: kycStats?.requires_review ?? 0 },
+              { label: "Pending", value: kycStats?.pending ?? 0 },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-lg bg-slate-50 dark:bg-slate-800 p-3"
+              >
+                <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">
+                  {item.value}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {item.label}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Metrics Grid */}
-        {metrics && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <MetricCard
-              title="Total Started"
-              value={metrics.started}
-              icon={Activity}
-              trend={{ value: 12, direction: "up" }}
-            />
-            <MetricCard
-              title="Approved"
-              value={metrics.approved}
-              icon={CheckCircle}
-              trend={{ value: 8, direction: "up" }}
-            />
-            <MetricCard
-              title="Conversion Rate"
-              value={`${metrics.conversionRate.toFixed(1)}%`}
-              icon={TrendingUp}
-              trend={{ value: 5, direction: "up" }}
-            />
-            <MetricCard
-              title="Manual Review Rate"
-              value={`${metrics.manualReviewRate.toFixed(1)}%`}
-              icon={AlertCircle}
-              trend={{ value: 2, direction: "down" }}
-            />
-            <MetricCard
-              title="Avg. Completion Time"
-              value={formatTime(metrics.avgCompletionTimeMs)}
-              icon={Clock}
-            />
-            <MetricCard
-              title="Rejected"
-              value={metrics.rejected}
-              icon={XCircle}
-              trend={{ value: 1, direction: "up" }}
-            />
-          </div>
-        )}
-
-        {/* Funnel Chart */}
-        {funnel && (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">
-              Verification Funnel
+        {/* KYI Summary */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">
+              KYI Overview
             </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={funnel.stages}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 200, bottom: 5 }}
+            <a
+              href="/kyi"
+              className="text-xs text-violet-600 dark:text-violet-400 hover:underline"
+            >
+              View all →
+            </a>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Total", value: kyiStats?.total ?? 0 },
+              { label: "Approved", value: kyiStats?.approved ?? 0 },
+              { label: "Declined", value: kyiStats?.declined ?? 0 },
+              { label: "Processing", value: kyiStats?.processing ?? 0 },
+              { label: "Needs Review", value: kyiStats?.requires_review ?? 0 },
+              { label: "PEP Count", value: kyiStats?.pepCount ?? 0 },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-lg bg-slate-50 dark:bg-slate-800 p-3"
               >
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={190} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#000000" radius={[0, 8, 8, 0]}>
-                  {funnel.stages.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={["#000000", "#6366f1", "#f97316", "#10b981"][index]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                <p className="text-lg font-bold text-slate-900 dark:text-white tabular-nums">
+                  {item.value}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {item.label}
+                </p>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Activity Feed */}
-        {metrics && (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Recent Activity
-            </h2>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {metrics.recentEvents.slice(0, 10).map((event, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0"
-                >
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
-                    {event.eventType}
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-500">
-                    {new Date(event.timestamp).toLocaleTimeString()}
+      {/* Recent KYC Activity */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">
+            Recent KYC Activity
+          </h2>
+          <a
+            href="/kyc"
+            className="text-xs text-violet-600 dark:text-violet-400 hover:underline"
+          >
+            View all →
+          </a>
+        </div>
+
+        {recentKYC.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-slate-400 dark:text-slate-500 text-sm">
+              No verifications yet
+            </p>
+            <a
+              href="/kyc/new"
+              className="mt-3 inline-block text-xs text-violet-600 dark:text-violet-400 hover:underline"
+            >
+              Start your first verification →
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentKYC.map((record) => (
+              <a
+                key={record.id}
+                href={`/kyc/${record.id}`}
+                className="flex items-center justify-between py-3 border-b border-slate-100 dark:border-slate-800 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg px-2 -mx-2 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-bold text-violet-600 dark:text-violet-400">
+                      {(record.userName || record.userEmail || "?")
+                        .charAt(0)
+                        .toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                      {record.userName || record.userEmail || "Unknown"}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {record.documentType?.replace("_", " ")} ·{" "}
+                      {record.reference?.slice(0, 20)}...
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`text-xs font-medium px-2 py-1 rounded-full ${
+                      record.status === "approved"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        : record.status === "declined"
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          : record.status === "processing"
+                            ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                    }`}
+                  >
+                    {record.status}
                   </span>
                 </div>
-              ))}
-            </div>
+              </a>
+            ))}
           </div>
         )}
       </div>
