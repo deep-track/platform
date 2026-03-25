@@ -13,8 +13,21 @@ export async function GET(
     const { auth0, isAuth0Configured } = getAuth0();
 
     if (!isAuth0Configured || !auth0) {
+      console.error("[Auth0 Route] Auth0 not configured:", {
+        isAuth0Configured,
+        hasAuth0Client: !!auth0,
+        endpoint,
+        envVars: {
+          hasSecret: !!process.env.AUTH0_SECRET,
+          hasDomain: !!process.env.AUTH0_DOMAIN,
+          hasClientId: !!process.env.AUTH0_CLIENT_ID,
+          hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
+          hasAppBaseUrl: !!process.env.APP_BASE_URL,
+          hasNextPublicAppUrl: !!process.env.NEXT_PUBLIC_APP_URL,
+        },
+      });
       return NextResponse.json(
-        { error: "Auth0 is not configured" },
+        { error: "Auth0 is not configured", endpoint },
         { status: 503 }
       );
     }
@@ -35,7 +48,7 @@ export async function GET(
   } catch (error) {
     console.error("[Auth0 Route Error]", error);
     return NextResponse.json(
-      { error: "Authentication error" },
+      { error: "Authentication error", details: String(error) },
       { status: 500 }
     );
   }
