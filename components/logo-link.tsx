@@ -8,7 +8,7 @@ export default function LogoLink() {
 		<Link href="/">
 			<Image
 				src="/deeptrack-logo.png"
-				alt="Deeptrack Platform Logo"
+				alt="Deeptrack Sentinel Logo"
 				width={128}
 				height={28}
 				className="h-auto"
