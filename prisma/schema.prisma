@@ -157,6 +157,27 @@ model KYIInvitation {
   createdAt    DateTime @default(now())
 }
 
+// ── OpenSanctions Screening Results ──────────────────────
+model ScreeningResult {
+  id               String   @id @default(cuid())
+  entityId         String   // Your internal ID for the entity
+  entityName       String   // Name of person/company screened
+  schema           String   // "Person", "Company", "LegalEntity", "Vessel"
+  matchFound       Boolean  @default(false)
+  matchCount       Int      @default(0)
+  primaryMatchId   String? // ID of highest-scoring match
+  primaryMatchCaption String? // Name of top match
+  matchScore       Float?   // Highest match score (0-1)
+  matchDatasets    String[] @default([]) // Datasets the match came from
+  rawResponse      Json? // Full OpenSanctions API response
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@index([entityId])
+  @@index([matchFound])
+  @@index([createdAt])
+}
+
 // ── KYB (Know Your Business) ─────────────────────────────
 model KYBRecord {
   id        String   @id @default(cuid())
