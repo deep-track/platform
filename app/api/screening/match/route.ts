@@ -47,7 +47,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             matchDatasets: primaryMatch?.datasets || [],
             rawResponse: {
               queryId: entity.id,
-              matches: matches,
+              matchResults: matches.map((m) => ({
+                id: m.id,
+                caption: m.caption,
+                score: m.score,
+                datasets: m.datasets,
+              })),
               timestamp: new Date().toISOString(),
             },
           },
