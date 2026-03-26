@@ -4,14 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { KYCStatus, KYCSubmissionData } from "@/lib/kyc-types";
 import { getKYCRecord, submitKYC } from "@/actions/kyc";
+import {
+  getDeclineMessages,
+  getRemediationSummary,
+  type ShuftiDeclineCode,
+} from "@/lib/shufti-decline-codes";
 import { DocumentCaptureStep } from "@/modules/kyc/steps/document-capture-step";
 import { SelfieCaptureStep } from "@/modules/kyc/steps/selfie-capture-step";
 import { SubmitStep } from "@/modules/kyc/steps/submit-step";
-import { CheckCircle, FileText, ClipboardCheck, Camera } from "lucide-react";
+import { CheckCircle, FileText, ClipboardCheck, Camera, AlertCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KYCStatusBadge } from "@/modules/kyc/kyc-status-badge";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 interface KYCWizardProps {
   invitationToken?: string;
@@ -31,6 +37,12 @@ export function KYCWizard({ invitationToken }: KYCWizardProps) {
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [liveStatus, setLiveStatus] = useState<KYCStatus>("processing");
+  const [declineInfo, setDeclineInfo] = useState<{
+    codes: ShuftiDeclineCode[];
+    summary: string;
+    steps: string[];
+    primaryIssue: string;
+  } | null>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
 
   function handleDocument(values: Pick<KYCSubmissionData, "documentType" | "documentFrontUrl" | "documentBackUrl" | "documentFrontBase64" | "documentBackBase64">) {
@@ -82,6 +94,18 @@ export function KYCWizard({ invitationToken }: KYCWizardProps) {
       if (!result.success || !result.data) return;
 
       setLiveStatus(result.data.status);
+      
+      // If declined, extract and process decline information
+      if (result.data.status === "declined" && result.data.declinedCodes && result.data.declinedCodes.length > 0) {
+        const remediation = getRemediationSummary(result.data.declinedCodes);
+        setDeclineInfo({
+          codes: result.data.declinedCodes as ShuftiDeclineCode[],
+          summary: remediation.summary,
+          steps: remediation.steps,
+          primaryIssue: remediation.primaryIssue,
+        });
+      }
+      
       if (["approved", "declined", "expired"].includes(result.data.status)) {
         if (pollRef.current) clearInterval(pollRef.current);
       }
@@ -93,6 +117,71 @@ export function KYCWizard({ invitationToken }: KYCWizardProps) {
   }, [completed, submittedKycId]);
 
   if (completed) {
+    // Declined verification screen
+    if (liveStatus === "declined" && declineInfo) {
+      return (
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20 p-8 text-center space-y-4">
+            <div className="mx-auto h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+              <AlertTriangle className="h-7 w-7 text-red-600 dark:text-red-400" />
+            </div>
+            <h2 className="text-xl font-bold text-red-900 dark:text-red-100">
+              Verification Declined
+            </h2>
+            <p className="text-sm text-red-800 dark:text-red-200">
+              Reference: <code className="font-mono bg-red-100 dark:bg-red-900/50 px-2 py-1 rounded">{submittedRef}</code>
+            </p>
+          </div>
+
+          <Card className="border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 p-6 space-y-4">
+            <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              Issue Found: {declineInfo.primaryIssue}
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {declineInfo.summary}
+            </p>
+
+            {declineInfo.steps.length > 0 && (
+              <div className="space-y-3 pt-4">
+                <h4 className="font-medium text-slate-900 dark:text-white text-sm">
+                  How to Fix:
+                </h4>
+                <ol className="space-y-2">
+                  {declineInfo.steps.map((step, idx) => (
+                    <li key={idx} className="flex gap-3 text-sm text-slate-600 dark:text-slate-400">
+                      <span className="font-semibold text-violet-600 dark:text-violet-400 min-w-6">
+                        {idx + 1}.
+                      </span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+          </Card>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center sm:justify-start">
+            <Button
+              onClick={() => {
+                setCompleted(false);
+                setCurrentStep(0);
+                setData({});
+                setDeclineInfo(null);
+              }}
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              Try Again
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/kyc">Back to Dashboard</Link>
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // Default completed screen (processing/approved)
     return (
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center space-y-4">
         <div className="mx-auto h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">

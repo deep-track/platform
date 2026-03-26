@@ -60,6 +60,7 @@ export type KYCRecord = {
   selfieUrl?: string;
   extractedData?: KYCExtractedData;
   verificationResult?: Record<string, 0 | 1>;
+  declinedCodes?: string[];
   declineReason?: string;
   reviewNotes?: string;
   riskScore?: number;
@@ -98,6 +99,7 @@ export type ShuftiWebhookPayload = {
   verification_data?: Record<string, unknown>;
   verification_result?: Record<string, 0 | 1>;
   declined_reason?: string;
+  declined_codes?: string | string[];
   info?: { agent?: Record<string, unknown>; geolocation?: Record<string, unknown> };
 };
 

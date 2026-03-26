@@ -26,6 +26,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ? `${appUrl}/api/kyc/by-reference/${payload.reference}`
       : `${appUrl}/api/kyc/by-reference/${payload.reference}`;
 
+    // Extract declined codes from payload if verification was declined
+    const declinedCodes = Array.isArray(payload.declined_codes) 
+      ? payload.declined_codes 
+      : payload.declined_codes 
+        ? [payload.declined_codes]
+        : [];
+
     const response = await fetch(endpoint, {
       method: "PATCH",
       headers: {
@@ -35,6 +42,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         status: newStatus,
         shuftiEventType: payload.event,
         declineReason: payload.declined_reason ?? null,
+        declinedCodes: declinedCodes,
         extractedData: payload.verification_data,
         verificationResult: payload.verification_result,
       }),

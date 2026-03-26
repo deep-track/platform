@@ -5,6 +5,7 @@ import { uploadFiles } from "@/lib/uploadthing";
 import { type KYCSubmissionData } from "@/lib/kyc-types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Upload } from "lucide-react";
+import { VerificationTips } from "@/modules/kyc/components/verification-tips";
 
 interface SelfieCaptureStepProps {
   defaultValues?: Partial<KYCSubmissionData>;
@@ -36,6 +37,8 @@ export function SelfieCaptureStep({ defaultValues, onNext, onBack }: SelfieCaptu
 
   return (
     <div className="space-y-6">
+      <VerificationTips type="selfie" />
+      
       <label className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 p-4 text-sm cursor-pointer hover:border-violet-500">
         <input
           type="file"

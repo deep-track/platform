@@ -82,6 +82,7 @@ model KYCRecord {
   userEmail             String?
   extractedData         Json?
   verificationResult    Json?
+  declinedCodes         String[]      @default([])
   shuftiEventType       String?
   shuftiVerificationUrl String?
   declineReason         String?

@@ -6,6 +6,7 @@ import { KYCStatusBadge } from "@/modules/kyc/kyc-status-badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, RefreshCw, User, FileText, ExternalLink, ClipboardCheck, Scan } from "lucide-react";
 import { format } from "date-fns";
+import { parseExtractedData, groupExtractedData, isDocumentExpired } from "@/lib/shufti-extract";
 
 interface KYCDetailPageProps {
   params: Promise<{ id: string }>;
@@ -18,7 +19,9 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
   if (!result.success || !result.data) notFound();
 
   const record = result.data;
-  const extracted = record.extractedData;
+  const parsed = parseExtractedData(record.extractedData);
+  const groups = groupExtractedData(parsed);
+  const isExpired = isDocumentExpired(parsed.expiryDate);
 
   return (
     <div className="min-h-full bg-slate-50 dark:bg-slate-950 py-8 px-4 sm:px-6">
@@ -65,16 +68,36 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
               <h2 className="text-sm font-semibold uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Scan className="h-4 w-4 text-slate-400" /> Extracted Identity Data
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <p><strong>Name:</strong> {[extracted?.name?.first_name, extracted?.name?.middle_name, extracted?.name?.last_name].filter(Boolean).join(" ") || "—"}</p>
-                <p><strong>DOB:</strong> {extracted?.dob ?? "—"}</p>
-                <p><strong>Document #:</strong> {extracted?.document_number ?? "—"}</p>
-                <p><strong>Expiry:</strong> {extracted?.expiry_date ?? "—"}</p>
-                <p><strong>Issue Date:</strong> {extracted?.issue_date ?? "—"}</p>
-                <p><strong>Nationality:</strong> {extracted?.nationality ?? "—"}</p>
-                <p><strong>Gender:</strong> {extracted?.gender ?? "—"}</p>
-                <p><strong>Country:</strong> {extracted?.country ?? "—"}</p>
-              </div>
+              
+              {isExpired && (
+                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex gap-2">
+                  <span className="text-sm text-amber-800 dark:text-amber-200">
+                    ⚠️ Document has expired or is expiring soon.
+                  </span>
+                </div>
+              )}
+
+              {groups.length > 0 ? (
+                <div className="space-y-6">
+                  {groups.map((group) => (
+                    <div key={group.section} className="space-y-2">
+                      <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {group.section}
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {group.fields.map((field) => (
+                          <div key={field.label} className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{field.label}</p>
+                            <p className="text-sm font-medium text-slate-900 dark:text-white mt-1">{field.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">No extracted data available yet</p>
+              )}
             </div>
 
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">

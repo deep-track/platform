@@ -68,6 +68,7 @@ export async function PATCH(
         extractedData: body.extractedData,
         verificationResult: body.verificationResult,
         declineReason: body.declineReason,
+        declinedCodes: body.declinedCodes ?? [],
         reviewNotes: body.reviewNotes,
         reviewedAt: body.status === "approved" || body.status === "declined"
           ? new Date()
