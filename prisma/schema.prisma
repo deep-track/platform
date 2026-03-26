@@ -157,6 +157,24 @@ model KYIInvitation {
   createdAt    DateTime @default(now())
 }
 
+// ── KYB (Know Your Business) ─────────────────────────────
+model KYBRecord {
+  id        String   @id @default(cuid())
+  reference String   @unique
+  status    String   @default("pending")
+  data      Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KYBDirector {
+  id        String   @id @default(cuid())
+  kybId     String
+  name      String?
+  role      String?
+  createdAt DateTime @default(now())
+}
+
 // ── Client Organisation ──────────────────────────────────
 model ClientOrganization {
   id              String   @id @default(cuid())
