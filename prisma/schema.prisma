@@ -169,7 +169,7 @@ model KYBRecord {
 
 model KYBDirector {
   id        String   @id @default(cuid())
-  kybId     String
+  kybId     String?
   name      String?
   role      String?
   createdAt DateTime @default(now())
