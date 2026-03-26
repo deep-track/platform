@@ -7,6 +7,7 @@ import {
   Home,
   LucideLogOut,
   Settings2,
+  Shield,
   User2,
   Wrench,
 } from "lucide-react"
@@ -49,6 +50,11 @@ const data = {
       title: "Insights",
       url: "/insights",
       icon: Settings2 ,
+    },
+    {
+      title: "AML Check",
+      url: "/aml-check",
+      icon: Shield,
     },
     {
       title: "Billing",
