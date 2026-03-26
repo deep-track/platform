@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle, ClipboardCheck, FileCheck2, User } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CheckCircle } from "lucide-react";
 import type { KYIStatus, KYISubmissionData } from "@/lib/kyi-types";
 import type { KYCSubmissionData } from "@/lib/kyc-types";
 import { submitKYI, getKYIRecord } from "@/actions/kyi";
@@ -18,12 +17,6 @@ import Link from "next/link";
 interface KYIWizardProps {
   invitationToken?: string;
 }
-
-const STEPS = [
-  { id: 0, title: "About You", icon: User, shortTitle: "About" },
-  { id: 1, title: "Identity Verification", icon: FileCheck2, shortTitle: "Identity" },
-  { id: 2, title: "Financial Documents", icon: ClipboardCheck, shortTitle: "Documents" },
-];
 
 function toKycDocType(
   governmentIdType?: KYISubmissionData["governmentIdType"],
@@ -67,7 +60,6 @@ export function KYIWizard({ invitationToken }: KYIWizardProps) {
   ) {
     setData((previous) => ({ ...previous, ...values }));
     setCurrentStep(1);
-    setIdentitySubStep(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -200,86 +192,23 @@ export function KYIWizard({ invitationToken }: KYIWizardProps) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <div className="flex items-center">
-          {STEPS.map((step, index) => (
-            <div key={step.id} className="flex items-center flex-1 last:flex-none">
-              <div className="flex flex-col items-center">
-                <div
-                  className={cn(
-                    "h-9 w-9 rounded-full flex items-center justify-center border-2 transition-all duration-200",
-                    index < currentStep
-                      ? "bg-violet-600 border-violet-600 text-white"
-                      : index === currentStep
-                        ? "border-violet-600 text-violet-600 bg-white dark:bg-slate-900"
-                        : "border-slate-300 dark:border-slate-600 text-slate-400 bg-white dark:bg-slate-900",
-                  )}
-                >
-                  {index < currentStep ? <CheckCircle className="h-5 w-5" /> : <step.icon className="h-4 w-4" />}
-                </div>
-                <span
-                  className={cn(
-                    "mt-1.5 text-xs font-medium hidden sm:block",
-                    index === currentStep
-                      ? "text-violet-600 dark:text-violet-400"
-                      : index < currentStep
-                        ? "text-violet-500"
-                        : "text-slate-400 dark:text-slate-500",
-                  )}
-                >
-                  {step.shortTitle}
-                </span>
-              </div>
-
-              {index < STEPS.length - 1 && (
-                <div className="flex-1 mx-2 sm:mx-3 mb-4">
-                  <div
-                    className={cn(
-                      "h-0.5 w-full transition-all duration-300",
-                      index < currentStep ? "bg-violet-500" : "bg-slate-200 dark:bg-slate-700",
-                    )}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">{STEPS[currentStep].title}</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          Step {currentStep + 1} of {STEPS.length}
-        </p>
-      </div>
-
+    <div className="max-w-2xl mx-auto">
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 sm:p-8">
         {currentStep === 0 && <InvestorClassificationStep defaultValues={data} onNext={handleClassification} />}
 
         {currentStep === 1 && identitySubStep === 0 && (
-          <div className="space-y-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setCurrentStep(0)}
-              className="mb-2"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
-            </Button>
-            <DocumentCaptureStep
-              defaultValues={{
-                documentType: toKycDocType(data.governmentIdType),
-                documentFrontUrl: data.governmentIdUrl ?? "",
-                documentFrontBase64: data.governmentIdBase64 ?? "",
-                documentBackUrl: "",
-                documentBackBase64: "",
-                selfieUrl: "placeholder",
-                selfieBase64: "placeholder",
-              }}
-              onNext={handleDocumentCapture}
-            />
-          </div>
+          <DocumentCaptureStep
+            defaultValues={{
+              documentType: toKycDocType(data.governmentIdType),
+              documentFrontUrl: data.governmentIdUrl ?? "",
+              documentFrontBase64: data.governmentIdBase64 ?? "",
+              documentBackUrl: "",
+              documentBackBase64: "",
+              selfieUrl: "placeholder",
+              selfieBase64: "placeholder",
+            }}
+            onNext={handleDocumentCapture}
+          />
         )}
 
         {currentStep === 1 && identitySubStep === 1 && (
