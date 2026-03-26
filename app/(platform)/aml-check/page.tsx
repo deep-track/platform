@@ -2,296 +2,231 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Shield, Search, ExternalLink, AlertCircle, CheckCircle } from "lucide-react";
+import { Shield, Search, ExternalLink, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { searchAML } from "@/actions/aml";
+import { getRiskLevelStyles, formatConfidenceScore, formatDatasets } from "@/lib/opensanctions";
+import type { SanctionsSearchResult, RiskLevel } from "@/lib/opensanctions";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { getRiskLevelStyles, formatConfidenceScore, formatDatasets, type RiskLevel } from "@/lib/opensanctions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 
-const COUNTRIES = [
-  { code: "US", name: "United States" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "CA", name: "Canada" },
-  { code: "AU", name: "Australia" },
-  { code: "SG", name: "Singapore" },
-  { code: "HK", name: "Hong Kong" },
-  { code: "JP", name: "Japan" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "CH", name: "Switzerland" },
-];
+const RISK_LEVEL_LABELS: Record<RiskLevel, string> = {
+  clear: "All Clear",
+  low: "Low Risk",
+  medium: "Medium Risk",
+  high: "High Risk",
+  sanctioned: "Sanctioned",
+};
 
 export default function AMLCheckPage() {
   const [fullName, setFullName] = useState("");
   const [country, setCountry] = useState("");
   const [loading, setLoading] = useState(false);
-  const [searchResult, setSearchResult] = useState<any>(null);
+  const [result, setResult] = useState<SanctionsSearchResult | null>(null);
 
-  async function handleSearch() {
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
     if (!fullName.trim()) {
-      toast.error("Please enter a full name");
+      toast.error("Please enter a full name to search.");
       return;
     }
 
     setLoading(true);
+    setResult(null);
+
     try {
-      const result = await searchAML(fullName, country || undefined);
-      if (result.success && result.data) {
-        setSearchResult(result.data);
-        toast.success("AML search completed");
-      } else {
-        toast.error(result.error || "Search failed");
+      const response = await searchAML(fullName.trim(), country.trim() || undefined);
+      if (!response.success || !response.data) {
+        toast.error(response.error ?? "AML search failed. Please try again.");
+        return;
       }
-    } catch (error) {
-      console.error("Search error:", error);
-      toast.error("An error occurred during search");
+      setResult(response.data);
+    } catch {
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
-  const riskStyles = searchResult ? getRiskLevelStyles(searchResult.riskLevel) : null;
+  const riskStyles = result ? getRiskLevelStyles(result.riskLevel) : null;
 
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-slate-950 py-8 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-              <Shield className="h-6 w-6 text-violet-600 dark:text-violet-400" />
-            </div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-              AML Screening
-            </h1>
-          </div>
-          <p className="text-slate-600 dark:text-slate-400">
-            Check for sanctions, PEP records, and adverse media using OpenSanctions
+    <div className="p-6 sm:p-8 max-w-4xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-primary text-primary-foreground">
+          <Shield className="w-5 h-5" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">AML Screening & Sanctions Check</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Search OpenSanctions database for individuals and entities
           </p>
         </div>
+      </div>
 
-        {/* Search Form */}
-        <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-          <div className="space-y-4">
-            <h2 className="font-semibold text-slate-900 dark:text-white">
-              Search Individual or Entity
-            </h2>
-
+      {/* Search Form */}
+      <Card className="border-slate-200 dark:border-slate-700">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">Search</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSearch} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Full Name *
-                </label>
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName">Full Name <span className="text-red-500">*</span></Label>
                 <Input
-                  placeholder="Enter full name"
+                  id="fullName"
+                  placeholder="e.g. John Smith"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSearch();
-                  }}
                   disabled={loading}
                 />
               </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
-                  Country (Optional)
-                </label>
-                <Select value={country} onValueChange={setCountry} disabled={loading}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COUNTRIES.map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1.5">
+                <Label htmlFor="country">Country <span className="text-slate-400">(optional)</span></Label>
+                <Input
+                  id="country"
+                  placeholder="e.g. US, GB, DE"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  disabled={loading}
+                />
               </div>
             </div>
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                disabled={loading || !fullName.trim()}
+                className="bg-violet-600 hover:bg-violet-700 text-white"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Searching…
+                  </>
+                ) : (
+                  <>
+                    <Search className="mr-2 h-4 w-4" />
+                    Search
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
-            <Button
-              onClick={handleSearch}
-              disabled={loading || !fullName.trim()}
-              className="bg-violet-600 hover:bg-violet-700 text-white w-full sm:w-auto"
-            >
-              <Search className="h-4 w-4 mr-2" />
-              {loading ? "Searching..." : "Search"}
-            </Button>
-          </div>
-        </Card>
+      {/* Loading state */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+          <span className="ml-3 text-slate-500 dark:text-slate-400">Screening against sanctions database…</span>
+        </div>
+      )}
 
-        {/* Results */}
-        {searchResult && (
-          <div className="space-y-6">
-            {/* Risk Assessment Banner */}
-            <div
-              className={`rounded-2xl border-2 p-6 space-y-3 ${riskStyles?.borderColor} ${riskStyles?.bgColor}`}
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    searchResult.riskLevel === "clear"
-                      ? "bg-emerald-200 dark:bg-emerald-900/50 text-emerald-700"
-                      : searchResult.riskLevel === "sanctioned"
-                        ? "bg-red-200 dark:bg-red-900/50 text-red-700"
-                        : "bg-amber-200 dark:bg-amber-900/50 text-amber-700"
-                  }`}
-                >
-                  {searchResult.riskLevel === "clear" ? (
-                    <CheckCircle className="h-6 w-6" />
-                  ) : (
-                    <AlertCircle className="h-6 w-6" />
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <h3
-                    className={`font-bold text-lg ${
-                      searchResult.riskLevel === "clear"
-                        ? "text-emerald-900 dark:text-emerald-100"
-                        : searchResult.riskLevel === "sanctioned"
-                          ? "text-red-900 dark:text-red-100"
-                          : "text-amber-900 dark:text-amber-100"
-                    }`}
-                  >
-                    Risk Level:{" "}
-                    <span className="uppercase">{searchResult.riskLevel}</span>
-                  </h3>
-                  <p
-                    className={`text-sm mt-1 ${
-                      searchResult.riskLevel === "clear"
-                        ? "text-emerald-800 dark:text-emerald-200"
-                        : searchResult.riskLevel === "sanctioned"
-                          ? "text-red-800 dark:text-red-200"
-                          : "text-amber-800 dark:text-amber-200"
-                    }`}
-                  >
-                    {searchResult.assessment.summary}
-                  </p>
-                </div>
+      {/* Results */}
+      {result && !loading && (
+        <div className="space-y-6">
+          {/* Risk Assessment Banner */}
+          <div
+            className={`rounded-xl border p-5 ${riskStyles?.bgColor} ${riskStyles?.borderColor}`}
+          >
+            <div className="flex items-start gap-4">
+              <div className="mt-0.5">
+                {result.riskLevel === "clear" ? (
+                  <CheckCircle2 className={`h-6 w-6 ${riskStyles?.textColor}`} />
+                ) : (
+                  <AlertTriangle className={`h-6 w-6 ${riskStyles?.textColor}`} />
+                )}
               </div>
-
-              {searchResult.results.length > 0 && (
-                <p
-                  className={`text-sm font-medium ${
-                    searchResult.riskLevel === "clear"
-                      ? "text-emerald-700 dark:text-emerald-300"
-                      : searchResult.riskLevel === "sanctioned"
-                        ? "text-red-700 dark:text-red-300"
-                        : "text-amber-700 dark:text-amber-300"
-                  }`}
-                >
-                  {searchResult.results.length} match{searchResult.results.length !== 1 ? "es" : ""} found
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-base font-semibold ${riskStyles?.textColor}`}>
+                    {RISK_LEVEL_LABELS[result.riskLevel]}
+                  </span>
+                  <Badge className={riskStyles?.badgeColor}>
+                    {result.riskLevel.toUpperCase()}
+                  </Badge>
+                </div>
+                <p className={`mt-1 text-sm ${riskStyles?.textColor}`}>
+                  {result.assessment.summary}
                 </p>
-              )}
-            </div>
-
-            {/* Matched Records */}
-            {searchResult.results.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-slate-900 dark:text-white">
-                  Matched Records
-                </h3>
-                {searchResult.results.map((match: any) => (
-                  <Card
-                    key={match.id}
-                    className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-3"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <a
-                          href={`https://opensanctions.org/entities/${match.id}/`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-lg font-semibold text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-2"
-                        >
-                          {match.caption}
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                          Schema: {match.schema}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                      <div>
-                        <p className="text-slate-500 dark:text-slate-400">
-                          Confidence
-                        </p>
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          {formatConfidenceScore(match.score)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-500 dark:text-slate-400">
-                          Datasets
-                        </p>
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          {formatDatasets(match.datasets)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-500 dark:text-slate-400">
-                          Countries
-                        </p>
-                        <p className="font-medium text-slate-900 dark:text-white">
-                          {match.countries?.join(", ") || "—"}
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                <p className={`mt-1 text-xs ${riskStyles?.textColor} opacity-75`}>
+                  {result.results.length === 0
+                    ? "No matches found"
+                    : `${result.results.length} match${result.results.length === 1 ? "" : "es"} found`}
+                </p>
               </div>
-            )}
-
-            {/* No Matches */}
-            {searchResult.results.length === 0 && (
-              <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 p-6 text-center space-y-3">
-                <CheckCircle className="h-8 w-8 text-emerald-600 dark:text-emerald-400 mx-auto" />
-                <div>
-                  <h3 className="font-semibold text-emerald-900 dark:text-emerald-100">
-                    All Clear
-                  </h3>
-                  <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">
-                    No sanctions or PEP records found for {fullName}
-                  </p>
-                </div>
-              </Card>
-            )}
-
-            {/* Last Updated */}
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
-              Search completed at{" "}
-              {new Date(searchResult.timestamp).toLocaleString()}
-            </p>
+            </div>
           </div>
-        )}
 
-        {/* Empty State */}
-        {!searchResult && (
-          <Card className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-12 text-center">
-            <Shield className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-              No searches yet
-            </h3>
-            <p className="text-slate-600 dark:text-slate-400">
-              Enter a name above to begin AML screening
-            </p>
-          </Card>
-        )}
-      </div>
+          {/* Matched Records */}
+          {result.results.length > 0 ? (
+            <div className="space-y-4">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                Matched Records ({result.results.length})
+              </h2>
+              {result.results.map((match) => (
+                <Card key={match.id} className="border-slate-200 dark:border-slate-700">
+                  <CardContent className="pt-5 pb-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {match.caption}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {formatConfidenceScore(match.score)} confidence
+                          </Badge>
+                        </div>
+
+                        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                          <div className="flex gap-1.5">
+                            <dt className="text-slate-500 dark:text-slate-400 shrink-0">Sources:</dt>
+                            <dd className="text-slate-700 dark:text-slate-300 truncate">
+                              {formatDatasets(match.datasets)}
+                            </dd>
+                          </div>
+                          {match.countries && match.countries.length > 0 && (
+                            <div className="flex gap-1.5">
+                              <dt className="text-slate-500 dark:text-slate-400 shrink-0">Countries:</dt>
+                              <dd className="text-slate-700 dark:text-slate-300">
+                                {match.countries.join(", ")}
+                              </dd>
+                            </div>
+                          )}
+                        </dl>
+                      </div>
+
+                      <a
+                        href={`https://opensanctions.org/entities/${match.id}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 flex items-center gap-1 text-sm"
+                      >
+                        Details
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            /* Empty state */
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10 p-8 text-center">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
+              <h3 className="font-semibold text-emerald-800 dark:text-emerald-200">No Matches Found</h3>
+              <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1">
+                <strong>{result.query}</strong> does not appear in any sanctions or PEP lists.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
