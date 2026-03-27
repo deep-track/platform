@@ -1,21 +1,71 @@
 /**
  * OpenSanctions API Integration Service
- * Provides entity matching, search, and retrieval for sanctions screening
+ * Provides sanctions screening via OpenSanctions API
  * 
- * API Docs: https://api.opensanctions.org/
+ * API Docs: https://opensanctions.org/docs/
  */
 
+const OPENSANCTIONS_BASE = "https://api.opensanctions.org";
+
 // ─────────────────────────────────────────────────────────
-// TYPE DEFINITIONS - CORE ENTITY MATCHING
+// TYPE DEFINITIONS
 // ─────────────────────────────────────────────────────────
 
+export type SanctionsResult = {
+  id: string;
+  caption: string;
+  schema: string;
+  score: number;
+  properties: {
+    name?: string[];
+    birthDate?: string[];
+    nationality?: string[];
+    country?: string[];
+    topics?: string[];
+    program?: string[];
+    sourceUrl?: string[];
+    notes?: string[];
+  };
+  datasets: string[];
+  countries?: string[];
+  topics?: string[];
+};
+
+export type SanctionsSearchResponse = {
+  results: SanctionsResult[];
+  total: { value: number; relation: string };
+  query: string;
+};
+
+export type AMLRiskLevel = "clear" | "low" | "medium" | "high" | "sanctioned";
+
+// Legacy types for backward compatibility
+export type RiskLevel = AMLRiskLevel;
+
+export interface RiskAssessment {
+  level: RiskLevel;
+  score: number;
+  summary: string;
+  color: string;
+  icon: string;
+}
+
+export interface SanctionsSearchResult {
+  query: string;
+  results: SanctionsResult[];
+  riskLevel: RiskLevel;
+  assessment: RiskAssessment;
+  timestamp: string;
+}
+
+// Entity types for backward compatibility with screening endpoints
 export interface PersonEntity {
   schema: "Person";
   properties: {
     firstName?: string[];
     lastName?: string[];
-    birthDate?: string[]; // "YYYY" or "YYYY-MM-DD"
-    nationality?: string[]; // country name or ISO code
+    birthDate?: string[];
+    nationality?: string[];
     idNumber?: string[];
     email?: string[];
     phone?: string[];
@@ -28,7 +78,7 @@ export interface CompanyEntity {
   schema: "Company";
   properties: {
     name: string[];
-    jurisdiction?: string[]; // country name or ISO code
+    jurisdiction?: string[];
     registrationNumber?: string[];
     website?: string[];
     email?: string[];
@@ -52,14 +102,18 @@ export interface VesselEntity {
   schema: "Vessel";
   properties: {
     name: string[];
-    flag?: string[]; // country flag
+    flag?: string[];
     imoNumber?: string[];
     mmsiNumber?: string[];
     callSign?: string[];
   };
 }
 
-export type OpenSanctionsEntity = PersonEntity | CompanyEntity | LegalEntityProperties | VesselEntity;
+export type OpenSanctionsEntity =
+  | PersonEntity
+  | CompanyEntity
+  | LegalEntityProperties
+  | VesselEntity;
 
 export interface MatchResult {
   id: string;
@@ -73,287 +127,32 @@ export interface MatchResult {
   topics?: string[];
 }
 
-export interface MatchResponse {
-  results: Record<string, MatchResult[]>; // keyed by query ID
-}
-
-export interface SearchResponse {
-  results: MatchResult[];
-}
-
-export interface EntityDetailsResponse {
-  id: string;
-  caption: string;
-  schema: string;
-  properties: Record<string, unknown>;
-  datasets: string[];
-  countries?: string[];
-  topics?: string[];
-  sanctions?: Array<{
-    program: string;
-    country: string;
-  }>;
-  related?: Array<{
-    id: string;
-    caption: string;
-    relationship: string;
-  }>;
-}
-
 // ─────────────────────────────────────────────────────────
-// TYPE DEFINITIONS - LEGACY AML
+// RISK ASSESSMENT
 // ─────────────────────────────────────────────────────────
 
-export type RiskLevel = "clear" | "low" | "medium" | "high" | "sanctioned";
-
-export interface RiskAssessment {
-  level: RiskLevel;
-  score: number;
-  summary: string;
-  color: string;
-  icon: string;
+export function getAMLRiskLevel(results: SanctionsResult[]): AMLRiskLevel {
+  if (!results || results.length === 0) return "clear";
+  const maxScore = Math.max(...results.map((r) => r.score ?? 0));
+  if (maxScore >= 0.9) return "sanctioned";
+  if (maxScore >= 0.7) return "high";
+  if (maxScore >= 0.5) return "medium";
+  if (maxScore > 0) return "low";
+  return "clear";
 }
 
-export interface SanctionsSearchResult {
-  query: string;
-  results: MatchResult[];
-  riskLevel: RiskLevel;
-  assessment: RiskAssessment;
-  timestamp: string;
-}
-
-// ─────────────────────────────────────────────────────────
-// CONFIGURATION & CLIENT
-// ─────────────────────────────────────────────────────────
-
-const API_BASE_URL = "https://api.opensanctions.org";
-const DEFAULT_DATASET = "default";
-const BATCH_SIZE = 20;
-const BATCH_DELAY_MS = 100; // Rate limiting between batches
-
-/**
- * Get the configured OpenSanctions API key from environment
- */
-function getApiKey(): string {
-  const key = process.env.OPENSANCTIONS_API_KEY;
-  if (!key) {
-    throw new Error(
-      "OPENSANCTIONS_API_KEY environment variable is not configured. " +
-      "Register for free at https://opensanctions.org/docs/"
-    );
-  }
-  return key;
-}
-
-/**
- * Make authenticated requests to OpenSanctions API
- */
-async function fetchOpenSanctions<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const apiKey = getApiKey();
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const headers: HeadersInit = {
-    "Authorization": `ApiKey ${apiKey}`,
-    "Content-Type": "application/json",
-    "User-Agent": "deeptrack-kyc/1.0",
-    ...(options.headers as Record<string, string>),
+export function getRiskColor(risk: AMLRiskLevel): string {
+  const map: Record<AMLRiskLevel, string> = {
+    clear: "emerald",
+    low: "blue",
+    medium: "amber",
+    high: "orange",
+    sanctioned: "red",
   };
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error(
-        `[OpenSanctions] API error (${response.status}):`,
-        errorBody
-      );
-      throw new Error(
-        `OpenSanctions API error: ${response.status} ${response.statusText}`
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("[OpenSanctions] Request failed:", error);
-    throw error;
-  }
+  return map[risk];
 }
 
-// ─────────────────────────────────────────────────────────
-// CORE FUNCTIONS - ENTITY MATCHING
-// ─────────────────────────────────────────────────────────
-
-/**
- * Match entities against the OpenSanctions default dataset
- * Supports batch matching (max 50 entities per request)
- * 
- * @param queries - Object mapping query ID to entity data
- * @returns Matches keyed by query ID
- */
-export async function matchEntities(
-  queries: Record<string, OpenSanctionsEntity>
-): Promise<MatchResponse> {
-  return fetchOpenSanctions<MatchResponse>(
-    `/api/v1/match/${DEFAULT_DATASET}`,
-    {
-      method: "POST",
-      body: JSON.stringify(queries),
-    }
-  );
-}
-
-/**
- * Search for entities using free-text query
- * 
- * @param query - Search term (e.g. name, company)
- * @param schema - Optional schema filter: "Person", "Company", "LegalEntity", "Vessel"
- * @returns List of matching entities
- */
-export async function searchEntities(
-  query: string,
-  schema?: "Person" | "Company" | "LegalEntity" | "Vessel"
-): Promise<SearchResponse> {
-  const params = new URLSearchParams();
-  params.set("q", query);
-  if (schema) params.set("schema", schema);
-
-  return fetchOpenSanctions<SearchResponse>(
-    `/api/v1/search/${DEFAULT_DATASET}?${params}`
-  );
-}
-
-/**
- * Get full entity details by ID
- * Includes relationships, sanctions, and all properties
- * 
- * @param id - Entity ID from OpenSanctions
- * @returns Full entity details
- */
-export async function getEntity(id: string): Promise<EntityDetailsResponse> {
-  return fetchOpenSanctions<EntityDetailsResponse>(
-    `/api/v1/entities/${id}`
-  );
-}
-
-// ─────────────────────────────────────────────────────────
-// BATCH MATCHING HELPER
-// ─────────────────────────────────────────────────────────
-
-/**
- * Match multiple entities in batches with rate limiting
- * Automatically handles batching for large datasets
- * 
- * @param entities - Array of entities to screen with IDs
- * @returns All results consolidated
- */
-export async function batchMatchEntities(
-  entities: Array<{ id: string; data: OpenSanctionsEntity }>
-): Promise<Record<string, MatchResult[]>> {
-  const allResults: Record<string, MatchResult[]> = {};
-
-  // Process in batches
-  for (let i = 0; i < entities.length; i += BATCH_SIZE) {
-    const batch = entities.slice(i, i + BATCH_SIZE);
-    const queries: Record<string, OpenSanctionsEntity> = {};
-
-    batch.forEach((entity) => {
-      queries[entity.id] = entity.data;
-    });
-
-    try {
-      const response = await matchEntities(queries);
-      Object.assign(allResults, response.results);
-
-      // Rate limiting between batches
-      if (i + BATCH_SIZE < entities.length) {
-        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
-      }
-    } catch (error) {
-      console.error(
-        `[OpenSanctions] Batch failed for entities ${i}-${i + BATCH_SIZE}:`,
-        error
-      );
-      // Continue with remaining batches but track the error
-      batch.forEach((entity) => {
-        allResults[entity.id] = [];
-      });
-    }
-  }
-
-  return allResults;
-}
-
-// ─────────────────────────────────────────────────────────
-// UTILITY FUNCTIONS
-// ─────────────────────────────────────────────────────────
-
-/**
- * Extract full name from person entity
- */
-export function getPersonName(entity: PersonEntity): string {
-  const firstName = entity.properties.firstName?.[0] ?? "";
-  const lastName = entity.properties.lastName?.[0] ?? "";
-  return [firstName, lastName].filter(Boolean).join(" ");
-}
-
-/**
- * Extract company name
- */
-export function getCompanyName(entity: CompanyEntity): string {
-  return entity.properties.name?.[0] ?? "Unknown";
-}
-
-/**
- * Check if any match found with high confidence (score >= 0.8)
- */
-export function hasHighConfidenceMatch(matches: MatchResult[]): boolean {
-  return matches.some((m) => m.score >= 0.8 && m.match);
-}
-
-/**
- * Get primary match if any
- */
-export function getPrimaryMatch(matches: MatchResult[]): MatchResult | null {
-  if (matches.length === 0) return null;
-  return matches.reduce((best, current) =>
-    current.score > best.score ? current : best
-  );
-}
-
-/**
- * Format datasets for display
- */
-export function formatDatasets(datasets: string[]): string {
-  if (datasets.length === 0) return "—";
-  return datasets.join(", ");
-}
-
-/**
- * Format match score as percentage
- */
-export function formatScore(score: number): string {
-  return `${Math.round(score * 100)}%`;
-}
-
-/**
- * Format confidence score as percentage (legacy AML function)
- */
-export function formatConfidenceScore(score?: number): string {
-  if (!score) return "—";
-  return `${Math.round(score * 100)}%`;
-}
-
-// ─────────────────────────────────────────────────────────
-// LEGACY AML FUNCTIONS (for backward compatibility)
-// ─────────────────────────────────────────────────────────
-
+// Legacy risk assessment styles for backward compatibility
 const RISK_ASSESSMENTS: Record<RiskLevel, RiskAssessment> = {
   clear: {
     level: "clear",
@@ -392,116 +191,6 @@ const RISK_ASSESSMENTS: Record<RiskLevel, RiskAssessment> = {
   },
 };
 
-/**
- * Legacy AML search function for free-text queries
- * Maps to searchEntities internally
- */
-export async function searchSanctions(
-  fullName: string,
-  country?: string
-): Promise<SanctionsSearchResult> {
-  const apiKey = process.env.OPENSANCTIONS_API_KEY;
-  if (!apiKey) {
-    console.error("[searchSanctions] OPENSANCTIONS_API_KEY not configured");
-    return {
-      query: fullName,
-      results: [],
-      riskLevel: "clear",
-      assessment: RISK_ASSESSMENTS.clear,
-      timestamp: new Date().toISOString(),
-    };
-  }
-
-  try {
-    const params = new URLSearchParams();
-    params.set("api_key", apiKey);
-    params.set("q", fullName);
-    if (country) params.set("country", country);
-
-    const response = await fetch(
-      `https://api.opensanctions.org/api/v1/search?${params}`,
-      {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "deeptrack-kyc/1.0",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      console.error("[searchSanctions] API error:", response.statusText);
-      return {
-        query: fullName,
-        results: [],
-        riskLevel: "clear",
-        assessment: RISK_ASSESSMENTS.clear,
-        timestamp: new Date().toISOString(),
-      };
-    }
-
-    const data = (await response.json()) as {
-      results?: Array<{ entity?: MatchResult }>;
-    };
-    const matches = data.results
-      ?.map(r => r.entity)
-      .filter((e): e is MatchResult => e !== undefined && e !== null) || [];
-
-    const riskLevel = assessAMLRiskLevel(matches);
-    const assessment = RISK_ASSESSMENTS[riskLevel];
-
-    return {
-      query: fullName,
-      results: matches,
-      riskLevel,
-      assessment,
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error) {
-    console.error("[searchSanctions] Exception:", error);
-    return {
-      query: fullName,
-      results: [],
-      riskLevel: "clear",
-      assessment: RISK_ASSESSMENTS.clear,
-      timestamp: new Date().toISOString(),
-    };
-  }
-}
-
-/**
- * Assess risk level based on sanctions matches
- */
-function assessAMLRiskLevel(matches: MatchResult[]): RiskLevel {
-  if (matches.length === 0) {
-    return "clear";
-  }
-
-  // Check for high-confidence matches (score >= 0.95)
-  const highConfidenceMatches = matches.filter(m => (m.score || 0) >= 0.95);
-  if (highConfidenceMatches.length > 0) {
-    return "sanctioned";
-  }
-
-  // Check for strong matches (score >= 0.85)
-  const strongMatches = matches.filter(m => (m.score || 0) >= 0.85);
-  if (strongMatches.length > 0) {
-    return "high";
-  }
-
-  // Check for moderate matches (score >= 0.70)
-  const moderateMatches = matches.filter(m => (m.score || 0) >= 0.70);
-  if (moderateMatches.length > 0) {
-    return "medium";
-  }
-
-  // Low confidence matches
-  return "low";
-}
-
-/**
- * Get risk level color classes for UI (legacy function)
- */
 export function getRiskLevelStyles(level: RiskLevel): {
   bgColor: string;
   textColor: string;
@@ -541,4 +230,177 @@ export function getRiskLevelStyles(level: RiskLevel): {
     },
   };
   return styles[level];
+}
+
+// ─────────────────────────────────────────────────────────
+// CORE SEARCH FUNCTION
+// ─────────────────────────────────────────────────────────
+
+export async function searchSanctions(params: {
+  query: string;
+  schema?: string;
+  limit?: number;
+}): Promise<SanctionsSearchResponse> {
+  const apiKey = process.env.OPENSANCTIONS_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "OPENSANCTIONS_API_KEY is not set in environment variables"
+    );
+  }
+
+  const url = new URL(`${OPENSANCTIONS_BASE}/search/default`);
+  url.searchParams.set("q", params.query);
+  url.searchParams.set("schema", params.schema ?? "Person");
+  url.searchParams.set("limit", String(params.limit ?? 10));
+
+  console.log("[OpenSanctions] Searching:", url.toString());
+
+  const res = await fetch(url.toString(), {
+    method: "GET",
+    headers: {
+      // CRITICAL: OpenSanctions uses "ApiKey" NOT "Bearer"
+      Authorization: `ApiKey ${apiKey}`,
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("[OpenSanctions] API error:", res.status, text);
+    throw new Error(
+      `OpenSanctions API returned ${res.status}: ${text}`
+    );
+  }
+
+  const data = await res.json();
+  console.log(
+    "[OpenSanctions] Results:",
+    data.total?.value,
+    "matches"
+  );
+  return data;
+}
+
+// Legacy function for backward compatibility with AML page
+export async function searchAML(
+  fullName: string,
+  country?: string
+): Promise<{ success: boolean; data?: SanctionsSearchResult; error?: string }> {
+  try {
+    if (!fullName || fullName.trim().length === 0) {
+      return { success: false, error: "Full name is required" };
+    }
+
+    const results = await searchSanctions({
+      query: fullName.trim(),
+      schema: "Person",
+      limit: 10,
+    });
+
+    const riskLevel = getAMLRiskLevel(results.results);
+    const assessment = RISK_ASSESSMENTS[riskLevel];
+
+    return {
+      success: true,
+      data: {
+        query: fullName,
+        results: results.results,
+        riskLevel,
+        assessment,
+        timestamp: new Date().toISOString(),
+      },
+    };
+  } catch (err) {
+    console.error("[searchAML] Exception:", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "AML search failed",
+    };
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// BATCH MATCHING (LEGACY SCREENING API)
+// ─────────────────────────────────────────────────────────
+
+const BATCH_SIZE = 20;
+const BATCH_DELAY_MS = 100;
+
+export async function batchMatchEntities(
+  entities: Array<{ id: string; data: OpenSanctionsEntity }>
+): Promise<Record<string, MatchResult[]>> {
+  const allResults: Record<string, MatchResult[]> = {};
+
+  // For now, use search API for each entity as a fallback
+  // In production, you would use the proper /api/v1/match endpoint
+  for (let i = 0; i < entities.length; i += BATCH_SIZE) {
+    const batch = entities.slice(i, i + BATCH_SIZE);
+
+    try {
+      for (const entity of batch) {
+        const name =
+          (entity.data.properties.name as string[] | undefined)?.[0] ??
+          ((entity.data.properties as any).firstName as string | undefined) ??
+          "";
+
+        if (!name) {
+          allResults[entity.id] = [];
+          continue;
+        }
+
+        const results = await searchSanctions({
+          query: name,
+          schema: entity.data.schema,
+          limit: 10,
+        });
+
+        allResults[entity.id] = results.results as MatchResult[];
+      }
+
+      if (i + BATCH_SIZE < entities.length) {
+        await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+      }
+    } catch (error) {
+      console.error(
+        `[OpenSanctions] Batch failed for entities ${i}-${i + BATCH_SIZE}:`,
+        error
+      );
+      batch.forEach((entity) => {
+        allResults[entity.id] = [];
+      });
+    }
+  }
+
+  return allResults;
+}
+
+// ─────────────────────────────────────────────────────────
+// UTILITY FUNCTIONS
+// ─────────────────────────────────────────────────────────
+
+export function getPrimaryMatch(matches: MatchResult[]): MatchResult | null {
+  if (matches.length === 0) return null;
+  return matches.reduce((best, current) =>
+    current.score > best.score ? current : best
+  );
+}
+
+export function formatDatasets(datasets: string[]): string {
+  if (datasets.length === 0) return "—";
+  return datasets.join(", ");
+}
+
+export function formatConfidenceScore(score?: number): string {
+  if (!score) return "—";
+  return `${Math.round(score * 100)}%`;
+}
+
+export function formatScore(score: number): string {
+  return `${Math.round(score * 100)}%`;
+}
+
+export function hasHighConfidenceMatch(matches: MatchResult[]): boolean {
+  return matches.some((m) => m.score >= 0.8 && m.match);
 }
