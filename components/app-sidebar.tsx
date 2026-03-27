@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TypographyP, TypographySmall } from "@/components/ui/typography";
 import {
+	Building2,
 	Database,
 	Home,
 	Key,
@@ -32,12 +33,12 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import { Toaster } from "react-hot-toast";
 
-
 const getItems = (role: "user" | "admin" | "head") => {
 	const baseItems = [
 		{ title: "Home", url: "/dashboard", icon: Home },
 		{ title: "KYC", url: "/kyc", icon: ShieldCheck },
 		{ title: "KYI", url: "/kyi", icon: TrendingUp },
+		{ title: "KYB", url: "/kyb", icon: Building2 },
 		{ title: "AML Check", url: "/aml-check", icon: Shield },
 		// { title: "Insights", url: "/insights", icon: Database },
 		{ title: "API Keys", url: "/api-keys", icon: Key },
@@ -97,13 +98,15 @@ export function AppSidebar({ role }: Props) {
 						<SidebarMenu className="px-4">
 							{getItems(role).map((item) => (
 								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton tooltip={item.title} asChild className="hover:bg-black/90">
+									<SidebarMenuButton
+										tooltip={item.title}
+										asChild
+										className="hover:bg-black/90"
+									>
 										<Link
 											href={item.url}
 											className={`flex items-center gap-2 px-4 py-2 rounded-xl hover:text-white transition-colors ${
-												pathname === item.url
-													? "bg-black text-white"
-													: ""
+												pathname === item.url ? "bg-black text-white" : ""
 											}`}
 										>
 											<div className="p-2 rounded-xl bg-primary text-primary-foreground">
@@ -130,7 +133,11 @@ export function AppSidebar({ role }: Props) {
 						/>
 						<TypographyP className="font-bold">Need help?</TypographyP>
 						<TypographySmall>Please check our docs</TypographySmall>
-						<Button asChild variant="secondary" className="w-full mt-2 text-black hover:bg-customTeal/90">
+						<Button
+							asChild
+							variant="secondary"
+							className="w-full mt-2 text-black hover:bg-customTeal/90"
+						>
 							<a
 								href="https://docs.deeptrack.io"
 								target="_blank"

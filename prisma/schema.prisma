@@ -157,6 +157,56 @@ model KYIInvitation {
   createdAt    DateTime @default(now())
 }
 
+// ── KYB (Know Your Business) ─────────────────────────────
+model KYBRecord {
+  id                  String        @id @default(cuid())
+  reference           String        @unique
+  userId              String?
+  organizationId      String?
+  status              String        @default("pending")
+  businessName        String?
+  registrationNumber  String?
+  country             String?
+  documentsData       Json?
+  ubosData            Json?
+  shuftiReference     String?
+  shuftiEventType     String?
+  declineReason       String?
+  reviewNotes         String?
+  submittedAt         DateTime?
+  reviewedAt          DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  ubos               KYBPerson[]
+  documents          KYBDocument[]
+}
+
+model KYBPerson {
+  id                  String    @id @default(cuid())
+  kybId               String
+  firstName           String
+  lastName            String
+  dateOfBirth         DateTime?
+  email               String
+  position            String
+  shareholding        String?
+  shuftiReference     String?
+  verificationStatus  String?
+  createdAt          DateTime  @default(now())
+  kyb                KYBRecord @relation(fields: [kybId], references: [id], onDelete: Cascade)
+}
+
+model KYBDocument {
+  id            String    @id @default(cuid())
+  kybId         String
+  documentType  String
+  fileUrl       String?
+  fileName      String?
+  mimeType      String?
+  createdAt    DateTime  @default(now())
+  kyb          KYBRecord @relation(fields: [kybId], references: [id], onDelete: Cascade)
+}
+
 // ── OpenSanctions Screening Results ──────────────────────
 model ScreeningResult {
   id               String   @id @default(cuid())
@@ -176,24 +226,6 @@ model ScreeningResult {
   @@index([entityId])
   @@index([matchFound])
   @@index([createdAt])
-}
-
-// ── KYB (Know Your Business) ─────────────────────────────
-model KYBRecord {
-  id        String   @id @default(cuid())
-  reference String   @unique
-  status    String   @default("pending")
-  data      Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model KYBDirector {
-  id        String   @id @default(cuid())
-  kybId     String?
-  name      String?
-  role      String?
-  createdAt DateTime @default(now())
 }
 
 // ── Client Organisation ──────────────────────────────────
