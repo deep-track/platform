@@ -15,6 +15,12 @@ export interface DeclineMessage {
   suggestion: string;
 }
 
+export interface DeclineMessageDisplay {
+  title: string;
+  message: string;
+  userAction: string;
+}
+
 /**
  * Decline code registry with user-friendly messages and remediation steps
  */
@@ -189,11 +195,35 @@ const DECLINE_CODE_REGISTRY: Record<ShuftiDeclineCode, DeclineMessage> = {
 };
 
 /**
- * Get decline message by code
+ * Get decline message for a single code
  */
-export function getDeclineMessage(code: string): DeclineMessage | null {
-  if (code in DECLINE_CODE_REGISTRY) {
-    return DECLINE_CODE_REGISTRY[code as ShuftiDeclineCode];
+export function getDeclineMessage(
+  code: string | string[] | null | undefined
+): DeclineMessageDisplay | null {
+  if (!code) {
+    return null;
+  }
+
+  let targetCode: string | null = null;
+
+  if (Array.isArray(code)) {
+    // Handle array of codes - use the first one
+    targetCode = code[0] || null;
+  } else {
+    targetCode = code;
+  }
+
+  if (!targetCode) {
+    return null;
+  }
+
+  const declineMsg = DECLINE_CODE_REGISTRY[targetCode as ShuftiDeclineCode];
+  if (declineMsg) {
+    return {
+      title: declineMsg.suggestion,
+      message: declineMsg.reason,
+      userAction: declineMsg.howToFix.join(" "),
+    };
   }
   return null;
 }
@@ -201,10 +231,10 @@ export function getDeclineMessage(code: string): DeclineMessage | null {
 /**
  * Get all decline messages for multiple codes
  */
-export function getDeclineMessages(codes: string[]): DeclineMessage[] {
+export function getDeclineMessages(codes: string[]): DeclineMessageDisplay[] {
   return codes
     .map(code => getDeclineMessage(code))
-    .filter((msg): msg is DeclineMessage => msg !== null);
+    .filter((msg): msg is DeclineMessageDisplay => msg !== null);
 }
 
 /**
@@ -222,9 +252,14 @@ export function getRemediationSummary(codes: string[]): {
   steps: string[];
   primaryIssue: string;
 } {
-  const messages = getDeclineMessages(codes);
+  const fullMessages = codes
+    .map(code => {
+      const targetCode = Array.isArray(code) ? code[0] : code;
+      return targetCode ? DECLINE_CODE_REGISTRY[targetCode as ShuftiDeclineCode] : null;
+    })
+    .filter((msg): msg is DeclineMessage => msg !== null);
   
-  if (messages.length === 0) {
+  if (fullMessages.length === 0) {
     return {
       summary: "Unknown decline reason",
       steps: ["Please contact support for assistance"],
@@ -232,8 +267,8 @@ export function getRemediationSummary(codes: string[]): {
     };
   }
 
-  const primaryMessage = messages[0];
-  const allSteps = [...new Set(messages.flatMap(m => m.howToFix))];
+  const primaryMessage = fullMessages[0];
+  const allSteps = [...new Set(fullMessages.flatMap(m => m.howToFix))];
 
   return {
     summary: primaryMessage.reason,

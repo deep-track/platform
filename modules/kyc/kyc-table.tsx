@@ -134,7 +134,16 @@ export function KYCTable({ records, isLoading }: KYCTableProps) {
           Status
         </span>
       ),
-      cell: ({ getValue }) => <KYCStatusBadge status={getValue() as KYCStatus} size="sm" />,
+      cell: ({ row }) => (
+        <div className="flex flex-col gap-1">
+          <KYCStatusBadge status={row.original.status as KYCStatus} size="sm" />
+          {row.original.status === "declined" && row.original.declineReason && (
+            <p className="text-xs text-red-600 dark:text-red-400 max-w-xs truncate">
+              {row.original.declineReason}
+            </p>
+          )}
+        </div>
+      ),
     },
     {
       accessorKey: "createdAt",

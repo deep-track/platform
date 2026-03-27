@@ -50,7 +50,6 @@ export async function GET(req: NextRequest) {
 		const [records, total] = await Promise.all([
 			prisma.kYBRecord.findMany({
 				where,
-				include: { ubos: true, documents: true },
 				orderBy: { createdAt: "desc" },
 				skip: (page - 1) * limit,
 				take: limit,

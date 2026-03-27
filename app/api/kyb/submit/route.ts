@@ -66,20 +66,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
 		const shuftiResponse = await createShuftiKYBVerification(shuftiRequest);
 
+		const createData: any = {
+			reference,
+			status: "processing",
+			submittedAt: new Date(),
+			shuftiReference: shuftiResponse.reference,
+		};
+
+		if (data.userId) createData.userId = data.userId;
+		if (data.organizationId) createData.organizationId = data.organizationId;
+		if (data.businessName) createData.businessName = data.businessName;
+		if (data.registrationNumber) createData.registrationNumber = data.registrationNumber;
+		if (data.country) createData.country = data.country;
+		if (data.documents) createData.documentsData = JSON.stringify(data.documents);
+		if (data.ubos) createData.ubosData = JSON.stringify(data.ubos);
+
 		const kybRecord = await prisma.kYBRecord.create({
-			data: {
-				reference,
-				userId: data.userId,
-				organizationId: data.organizationId,
-				status: "processing",
-				businessName: data.businessName,
-				registrationNumber: data.registrationNumber,
-				country: data.country,
-				documentsData: JSON.stringify(data.documents) as unknown as undefined,
-				ubosData: JSON.stringify(data.ubos) as unknown as undefined,
-				shuftiReference: shuftiResponse.reference,
-				submittedAt: new Date(),
-			},
+			data: createData,
 		});
 
 		await prisma.kYBPerson.createMany({

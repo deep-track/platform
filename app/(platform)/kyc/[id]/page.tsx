@@ -4,9 +4,10 @@ import Image from "next/image";
 import { getKYCRecord, refreshKYCFromShufti } from "@/actions/kyc";
 import { KYCStatusBadge } from "@/modules/kyc/kyc-status-badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, RefreshCw, User, FileText, ExternalLink, ClipboardCheck, Scan } from "lucide-react";
+import { ChevronLeft, RefreshCw, User, FileText, ExternalLink, ClipboardCheck, Scan, AlertCircle, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { parseExtractedData, groupExtractedData, isDocumentExpired } from "@/lib/shufti-extract";
+import { getDeclineMessage } from "@/lib/shufti-decline-codes";
 
 interface KYCDetailPageProps {
   params: Promise<{ id: string }>;
@@ -22,6 +23,11 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
   const parsed = parseExtractedData(record.extractedData);
   const groups = groupExtractedData(parsed);
   const isExpired = isDocumentExpired(parsed.expiryDate);
+  
+  // Get decline message if declined
+  const declineInfo = record.status === "declined" 
+    ? getDeclineMessage(record.declinedCodes as string[] | null | undefined)
+    : null;
 
   return (
     <div className="min-h-full bg-slate-50 dark:bg-slate-950 py-8 px-4 sm:px-6">
@@ -62,6 +68,38 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
           </div>
         </div>
 
+        {/* Decline Reason Banner */}
+        {record.status === "declined" && declineInfo && (
+          <div className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20 p-6">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <h3 className="font-semibold text-red-900 dark:text-red-100">
+                    {declineInfo.title}
+                  </h3>
+                  <p className="text-sm text-red-800 dark:text-red-200 mt-1">
+                    {declineInfo.message}
+                  </p>
+                </div>
+                {declineInfo.userAction && (
+                  <div className="bg-white dark:bg-red-950/30 rounded-lg p-3 border border-red-100 dark:border-red-800">
+                    <p className="text-xs font-semibold text-red-900 dark:text-red-200 mb-2">💡 How to fix this:</p>
+                    <p className="text-sm text-red-800 dark:text-red-300">{declineInfo.userAction}</p>
+                  </div>
+                )}
+                {record.declineReason && (
+                  <div className="text-xs text-red-700 dark:text-red-300 pt-2 border-t border-red-200 dark:border-red-800">
+                    <strong>Additional reason:</strong> {record.declineReason}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
@@ -96,7 +134,14 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No extracted data available yet</p>
+                <div className="py-6 text-center">
+                  <Scan className="h-10 w-10 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {record.status === "processing" || record.status === "pending"
+                      ? "Extraction in progress - data will appear here once verification is complete"
+                      : "No extracted data available"}
+                  </p>
+                </div>
               )}
             </div>
 
@@ -136,14 +181,45 @@ export default async function KYCDetailPage({ params }: KYCDetailPageProps) {
               </div>
             )}
 
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-3">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-4">
               <h2 className="text-sm font-semibold uppercase tracking-wider">Verification Details</h2>
-              <p className="text-sm"><strong>Event:</strong> {record.shuftiEventType ?? "—"}</p>
-              <p className="text-sm"><strong>Submitted:</strong> {record.submittedAt ? format(new Date(record.submittedAt), "MMM d, yyyy HH:mm") : "—"}</p>
-              {record.reviewedAt && <p className="text-sm"><strong>Reviewed:</strong> {format(new Date(record.reviewedAt), "MMM d, yyyy HH:mm")}</p>}
+              
+              {record.status === "approved" && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Verified</span>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <div className="text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Event:</span>
+                  <span className="ml-2 font-medium text-slate-900 dark:text-white">{record.shuftiEventType ?? "—"}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-slate-500 dark:text-slate-400">Submitted:</span>
+                  <span className="ml-2 font-medium text-slate-900 dark:text-white">
+                    {record.submittedAt ? format(new Date(record.submittedAt), "MMM d, yyyy HH:mm") : "—"}
+                  </span>
+                </div>
+                {record.reviewedAt && (
+                  <div className="text-sm">
+                    <span className="text-slate-500 dark:text-slate-400">Reviewed:</span>
+                    <span className="ml-2 font-medium text-slate-900 dark:text-white">
+                      {format(new Date(record.reviewedAt), "MMM d, yyyy HH:mm")}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {record.shuftiVerificationUrl && (
-                <a href={record.shuftiVerificationUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs text-violet-600 hover:underline">
-                  View verification details <ExternalLink className="h-3 w-3" />
+                <a 
+                  href={record.shuftiVerificationUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300 pt-2 border-t border-slate-200 dark:border-slate-700 mt-4"
+                >
+                  View Shufti Details <ExternalLink className="h-3 w-3" />
                 </a>
               )}
             </div>
