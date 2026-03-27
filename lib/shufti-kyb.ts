@@ -1,40 +1,39 @@
 import crypto from "node:crypto";
+import type { DocumentType, Position, UploadedDocument } from "./kyb-types";
 import { mapShuftiErrorToUserMessage } from "./shufti-errors";
 
 const SHUFTI_API_URL = "https://api.shuftipro.com/";
 
-export type ShuftiDocumentType = "passport" | "id_card" | "driving_license";
-
-export type ShuftiVerificationRequest = {
+export type ShuftiKYBRequest = {
 	reference: string;
 	callback_url: string;
 	country: string;
 	language: string;
 	email: string;
 	verification_mode: "image_only" | "video" | "any";
-	document?: {
-		proof: string;
-		additional_proof?: string;
-		supported_types: ShuftiDocumentType[];
-		name?: {
-			first_name?: string;
-			last_name?: string;
-			middle_name?: string;
+	kyb: {
+		company_name: string;
+		companyRegistrationNumber: string;
+		country_names: string[];
+		document: {
+			proof: string;
+			additional_proof?: string;
+			supported_types: DocumentType[];
 		};
-		dob?: string;
-		gender?: string;
-		document_number?: string;
-		expiry_date?: string;
-		issue_date?: string;
-	};
-	face?: {
-		proof: string;
-		allow_offline?: boolean;
-		allow_online?: boolean;
+		ubos: Array<{
+			name: {
+				first_name: string;
+				last_name: string;
+			};
+			dob: string;
+			email: string;
+			position: string;
+			shareholding?: string;
+		}>;
 	};
 };
 
-export type ShuftiResponse = {
+export type ShuftiKYBResponse = {
 	reference: string;
 	event:
 		| "request.received"
@@ -66,9 +65,9 @@ function getAuthHeader(): string {
 	return `Basic ${credentials}`;
 }
 
-export async function createShuftiVerification(
-	request: ShuftiVerificationRequest,
-): Promise<ShuftiResponse> {
+export async function createShuftiKYBVerification(
+	request: ShuftiKYBRequest,
+): Promise<ShuftiKYBResponse> {
 	const response = await fetch(SHUFTI_API_URL, {
 		method: "POST",
 		headers: {
@@ -85,36 +84,13 @@ export async function createShuftiVerification(
 		throw new Error(userMessage);
 	}
 
-	return response.json() as Promise<ShuftiResponse>;
+	return response.json() as Promise<ShuftiKYBResponse>;
 }
 
-export async function getShuftiVerificationStatus(
+export async function getShuftiKYBStatus(
 	reference: string,
-): Promise<ShuftiResponse> {
+): Promise<ShuftiKYBResponse> {
 	const response = await fetch(`${SHUFTI_API_URL}status`, {
-		method: "POST",
-		headers: {
-			Authorization: getAuthHeader(),
-			"Content-Type": "application/json",
-			Accept: "application/json",
-		},
-		body: JSON.stringify({ reference }),
-	});
-
-	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(
-			`Shufti Pro status check error ${response.status}: ${text}`,
-		);
-	}
-
-	return response.json() as Promise<ShuftiResponse>;
-}
-
-export async function deleteShuftiVerification(
-	reference: string,
-): Promise<void> {
-	const response = await fetch(`${SHUFTI_API_URL}delete`, {
 		method: "POST",
 		headers: {
 			Authorization: getAuthHeader(),
@@ -129,17 +105,26 @@ export async function deleteShuftiVerification(
 		const userMessage = mapShuftiErrorToUserMessage(text);
 		throw new Error(userMessage);
 	}
+
+	return response.json() as Promise<ShuftiKYBResponse>;
 }
 
-export function buildShuftiRequest(params: {
+export function buildShuftiKYBRequest(params: {
 	reference: string;
 	email: string;
+	businessName: string;
+	registrationNumber: string;
 	country: string;
-	documentType: ShuftiDocumentType;
-	documentFrontBase64: string;
-	documentBackBase64?: string;
-	selfieBase64: string;
-}): ShuftiVerificationRequest {
+	documents: UploadedDocument[];
+	ubos: Array<{
+		firstName: string;
+		lastName: string;
+		dateOfBirth: string;
+		email: string;
+		position: Position;
+		shareholding?: string;
+	}>;
+}): ShuftiKYBRequest {
 	const appUrl =
 		process.env.APP_BASE_URL ||
 		process.env.NEXT_PUBLIC_APP_URL ||
@@ -148,6 +133,17 @@ export function buildShuftiRequest(params: {
 	const stripPrefix = (b64: string) =>
 		b64.includes(",") ? b64.split(",")[1] : b64;
 
+	const sortedDocs = [...params.documents].sort((a, b) =>
+		a.type.localeCompare(b.type),
+	);
+
+	const proofDoc = sortedDocs[0];
+	const additionalProofDoc = sortedDocs[1];
+
+	const supportedTypes: DocumentType[] = params.documents.map(
+		(doc) => doc.type,
+	);
+
 	return {
 		reference: params.reference,
 		callback_url: `${appUrl}/api/webhooks/shufti`,
@@ -155,44 +151,32 @@ export function buildShuftiRequest(params: {
 		language: "EN",
 		email: params.email,
 		verification_mode: "image_only",
-		document: {
-			proof: stripPrefix(params.documentFrontBase64),
-			...(params.documentBackBase64 && {
-				additional_proof: stripPrefix(params.documentBackBase64),
-			}),
-			supported_types: [params.documentType],
-		},
-		face: {
-			proof: stripPrefix(params.selfieBase64),
+		kyb: {
+			company_name: params.businessName,
+			companyRegistrationNumber: params.registrationNumber,
+			country_names: [params.country.toLowerCase()],
+			document: {
+				proof: stripPrefix(proofDoc?.base64 || ""),
+				additional_proof: additionalProofDoc
+					? stripPrefix(additionalProofDoc.base64)
+					: undefined,
+				supported_types: supportedTypes,
+			},
+			ubos: params.ubos.map((ubo) => ({
+				name: {
+					first_name: ubo.firstName,
+					last_name: ubo.lastName,
+				},
+				dob: ubo.dateOfBirth,
+				email: ubo.email,
+				position: ubo.position,
+				shareholding: ubo.shareholding || undefined,
+			})),
 		},
 	};
 }
 
-export function verifyShuftiWebhookSignature(
-	payload: string,
-	receivedSignature: string | null,
-): boolean {
-	if (!receivedSignature) return false;
-
-	const secretKey = process.env.SHUFTI_SECRET_KEY;
-	if (!secretKey) return false;
-
-	const expectedSig = crypto
-		.createHmac("sha256", secretKey)
-		.update(payload)
-		.digest("hex");
-
-	if (receivedSignature.length !== expectedSig.length) {
-		return false;
-	}
-
-	return crypto.timingSafeEqual(
-		Buffer.from(receivedSignature),
-		Buffer.from(expectedSig),
-	);
-}
-
-export function mapShuftiEventToStatus(event: string): string {
+export function mapShuftiEventToKYBStatus(event: string): string {
 	switch (event) {
 		case "verification.accepted":
 			return "approved";
