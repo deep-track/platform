@@ -38,8 +38,10 @@ export async function PATCH(
         declinedCodes: Array.isArray(body.declinedCodes)
           ? body.declinedCodes
           : [],
-        // Save full Shufti extracted data
+        // Save standard OCR data
         extractedData: body.extractedData ?? existing.extractedData,
+        // Save enhanced OCR data
+        additionalData: body.additionalData ?? existing.additionalData,
         verificationResult:
           body.verificationResult ?? existing.verificationResult,
         // Set reviewedAt when terminal status reached

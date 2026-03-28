@@ -81,8 +81,10 @@ model KYCRecord {
   userName              String?
   userEmail             String?
   extractedData         Json?
+  additionalData        Json?
   verificationResult    Json?
   declinedCodes         String[]      @default([])
+  servicesDeclinedCodes Json?
   shuftiEventType       String?
   shuftiVerificationUrl String?
   declineReason         String?
@@ -131,7 +133,10 @@ model KYIRecord {
   userName              String?
   userEmail             String?
   extractedData         Json?
+  additionalData        Json?
   verificationResult    Json?
+  declinedCodes         String[]      @default([])
+  servicesDeclinedCodes Json?
   riskScore             Int?
   shuftiEventType       String?
   shuftiVerificationUrl String?

@@ -100,6 +100,12 @@ export type ShuftiWebhookPayload = {
   verification_result?: Record<string, 0 | 1>;
   declined_reason?: string;
   declined_codes?: string | string[];
+  services_declined_codes?: {
+    document?: string[];
+    face?: string[];
+    address?: string[];
+  };
+  additional_data?: Record<string, unknown>;
   info?: { agent?: Record<string, unknown>; geolocation?: Record<string, unknown> };
 };
 

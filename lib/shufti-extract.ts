@@ -1,25 +1,187 @@
 /**
- * Shufti Pro Extracted Data Parsing and Display Utilities
+ * Shufti Pro Data Extraction Utility
  * 
  * Handles parsing and formatting of extracted document data from Shufti verification
+ * Reads from TWO sources:
+ *   - verification_data.document → basic OCR fields
+ *   - additional_data.document.proof → enhanced fields
+ *      (height, place_of_birth, authority, personal_number etc.)
  */
 
-export interface ShuftiExtractedName {
+export type ShuftiDocumentBasic = {
+  name?: {
+    first_name?: string;
+    middle_name?: string;
+    last_name?: string;
+  };
+  dob?: string;
+  expiry_date?: string;
+  issue_date?: string;
+  document_number?: string;
+  gender?: string;
+  selected_type?: string[];
+  nationality?: string;
+  address?: string;
+};
+
+export type ShuftiDocumentEnhanced = {
+  first_name?: string;
+  last_name?: string;
+  height?: string;
+  country?: string;
+  authority?: string;
+  issue_date?: string;
+  expiry_date?: string;
+  nationality?: string;
+  country_code?: string;
+  document_type?: string;
+  place_of_birth?: string;
+  document_number?: string;
+  personal_number?: string;
+  dob?: string;
+  age?: number | string;
+  gender?: string;
+};
+
+export type ShuftiExtracted = {
+  // From verification_data.document (standard OCR)
+  basic: ShuftiDocumentBasic | null;
+  // From additional_data.document.proof (enhanced OCR)
+  enhanced: ShuftiDocumentEnhanced | null;
+  // Merged best values from both sources
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  fullName: string;
+  dob: string;
+  gender: string;
+  nationality: string;
+  documentNumber: string;
+  expiryDate: string;
+  issueDate: string;
+  documentType: string;
+  placeOfBirth: string;
+  authority: string;
+  age: string;
+  country: string;
+};
+
+/**
+ * Parse extracted data from BOTH Shufti sources
+ * 
+ * Reads:
+ *   - extractedData = verification_data from webhook
+ *   - additionalData = additional_data from webhook
+ * 
+ * Merges both, preferring enhanced data when available
+ */
+export function parseShuftiExtracted(
+  extractedData: unknown,
+  additionalData: unknown
+): ShuftiExtracted {
+  // Parse standard verification_data
+  let basic: ShuftiDocumentBasic | null = null;
+  if (extractedData && typeof extractedData === "object") {
+    const d = extractedData as Record<string, unknown>;
+    basic = (d.document as ShuftiDocumentBasic) ?? null;
+  }
+
+  // Parse additional_data.document.proof (enhanced)
+  let enhanced: ShuftiDocumentEnhanced | null = null;
+  if (additionalData && typeof additionalData === "object") {
+    const ad = additionalData as Record<string, unknown>;
+    const doc = ad.document as Record<string, unknown> | undefined;
+    enhanced = (doc?.proof as ShuftiDocumentEnhanced) ?? null;
+  }
+
+  // Merge — prefer enhanced data when available
+  const firstName =
+    enhanced?.first_name ??
+    basic?.name?.first_name ?? "";
+
+  const lastName =
+    enhanced?.last_name ??
+    basic?.name?.last_name ?? "";
+
+  const middleName = basic?.name?.middle_name ?? "";
+
+  const fullName = [firstName, middleName, lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return {
+    basic,
+    enhanced,
+    firstName,
+    lastName,
+    middleName,
+    fullName,
+    dob: enhanced?.dob ?? basic?.dob ?? "",
+    gender: enhanced?.gender ?? basic?.gender ?? "",
+    nationality:
+      enhanced?.nationality ?? basic?.nationality ?? "",
+    documentNumber:
+      enhanced?.document_number ?? basic?.document_number ?? "",
+    expiryDate:
+      enhanced?.expiry_date ?? basic?.expiry_date ?? "",
+    issueDate:
+      enhanced?.issue_date ?? basic?.issue_date ?? "",
+    documentType:
+      enhanced?.document_type ??
+      basic?.selected_type?.[0] ?? "",
+    placeOfBirth: enhanced?.place_of_birth ?? "",
+    authority: enhanced?.authority ?? "",
+    age: String(enhanced?.age ?? ""),
+    country:
+      enhanced?.country ?? enhanced?.country_code ?? "",
+  };
+}
+
+/**
+ * Format date string to human-readable format
+ */
+export function formatDate(dateStr: string): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Format gender code to human-readable format
+ */
+export function formatGender(g: string): string {
+  if (g === "M" || g?.toLowerCase() === "male") return "Male";
+  if (g === "F" || g?.toLowerCase() === "female") return "Female";
+  return g || "—";
+}
+
+// Legacy exports for backwards compatibility
+export type ShuftiExtractedName = {
   first_name?: string;
   middle_name?: string;
   last_name?: string;
-}
+};
 
-export interface ShuftiExtractedAddress {
+export type ShuftiExtractedAddress = {
   full_address?: string;
   street_address?: string;
   city?: string;
   state?: string;
   postal_code?: string;
   country?: string;
-}
+};
 
-export interface ShuftiExtractedDocument {
+export type ShuftiExtractedDocument = {
   name?: ShuftiExtractedName;
   dob?: string;
   gender?: string;
@@ -31,9 +193,9 @@ export interface ShuftiExtractedDocument {
   country?: string;
   address?: ShuftiExtractedAddress;
   [key: string]: unknown;
-}
+};
 
-export interface ParsedExtractedData {
+export type ParsedExtractedData = {
   fullName: string | null;
   firstName: string | null;
   middleName: string | null;
@@ -47,11 +209,10 @@ export interface ParsedExtractedData {
   country: string | null;
   address: ShuftiExtractedAddress | null;
   rawData: ShuftiExtractedDocument;
-}
+};
 
 /**
- * Parse extracted data from Shufti verification
- * Handles nested structure and null safety
+ * Parse extracted data (legacy — for backwards compatibility)
  */
 export function parseExtractedData(data: unknown): ParsedExtractedData {
   const rawData = (data as ShuftiExtractedDocument) || {};
@@ -75,6 +236,7 @@ export function parseExtractedData(data: unknown): ParsedExtractedData {
     rawData,
   };
 }
+
 
 /**
  * Build full name from name components
@@ -105,20 +267,6 @@ export function formatShuftiDate(dateString?: string | null): string | null {
     });
   } catch {
     return dateString;
-  }
-}
-
-/**
- * Check if document is expired based on expiry date
- */
-export function isDocumentExpired(expiryDate?: string | null): boolean {
-  if (!expiryDate) return false;
-  
-  try {
-    const expiry = new Date(expiryDate);
-    return expiry < new Date();
-  } catch {
-    return false;
   }
 }
 
@@ -175,75 +323,3 @@ export function getFieldLabel(field: string): string {
   return labels[field] || field.replace(/_/g, " ");
 }
 
-/**
- * Create display groups for extracted data fields
- */
-export function groupExtractedData(parsed: ParsedExtractedData): {
-  section: string;
-  fields: Array<{ label: string; value: string }>;
-}[] {
-  const groups: {
-    section: string;
-    fields: Array<{ label: string; value: string }>;
-  }[] = [];
-  
-  // Personal Info Group
-  const personalFields = [
-    { label: "Full Name", value: parsed.fullName },
-    { label: "Date of Birth", value: formatShuftiDate(parsed.dateOfBirth) },
-    { label: "Gender", value: parsed.gender },
-    { label: "Nationality", value: parsed.nationality },
-  ].filter(({ value }) => value !== null);
-  
-  if (personalFields.length > 0) {
-    groups.push({
-      section: "Personal Information",
-      fields: personalFields.map(({ label, value }) => ({
-        label,
-        value: value || "—",
-      })),
-    });
-  }
-  
-  // Document Info Group
-  const documentFields = [
-    { label: "Document Number", value: parsed.documentNumber },
-    { label: "Country", value: parsed.country },
-    { label: "Issue Date", value: formatShuftiDate(parsed.issueDate) },
-    { label: "Expiry Date", value: formatShuftiDate(parsed.expiryDate) },
-  ].filter(({ value }) => value !== null);
-  
-  if (documentFields.length > 0) {
-    groups.push({
-      section: "Document Information",
-      fields: documentFields.map(({ label, value }) => ({
-        label,
-        value: value || "—",
-      })),
-    });
-  }
-  
-  // Address Group
-  if (parsed.address) {
-    const addressFields = [
-      { label: "Full Address", value: parsed.address.full_address },
-      { label: "Street", value: parsed.address.street_address },
-      { label: "City", value: parsed.address.city },
-      { label: "State", value: parsed.address.state },
-      { label: "Postal Code", value: parsed.address.postal_code },
-      { label: "Country", value: parsed.address.country },
-    ].filter(({ value }) => value !== null && value !== undefined);
-    
-    if (addressFields.length > 0) {
-      groups.push({
-        section: "Address",
-        fields: addressFields.map(({ label, value }) => ({
-          label,
-          value: value || "—",
-        })),
-      });
-    }
-  }
-  
-  return groups;
-}

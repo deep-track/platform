@@ -5,9 +5,7 @@ import { toast } from "sonner";
 import type { KYCStatus, KYCSubmissionData } from "@/lib/kyc-types";
 import { getKYCRecord, submitKYC } from "@/actions/kyc";
 import {
-  getDeclineMessages,
   getRemediationSummary,
-  type ShuftiDeclineCode,
 } from "@/lib/shufti-decline-codes";
 import { DocumentCaptureStep } from "@/modules/kyc/steps/document-capture-step";
 import { SelfieCaptureStep } from "@/modules/kyc/steps/selfie-capture-step";
@@ -38,7 +36,7 @@ export function KYCWizard({ invitationToken }: KYCWizardProps) {
   const [completed, setCompleted] = useState(false);
   const [liveStatus, setLiveStatus] = useState<KYCStatus>("processing");
   const [declineInfo, setDeclineInfo] = useState<{
-    codes: ShuftiDeclineCode[];
+    codes: string[];
     summary: string;
     steps: string[];
     primaryIssue: string;
@@ -99,7 +97,7 @@ export function KYCWizard({ invitationToken }: KYCWizardProps) {
       if (result.data.status === "declined" && result.data.declinedCodes && result.data.declinedCodes.length > 0) {
         const remediation = getRemediationSummary(result.data.declinedCodes);
         setDeclineInfo({
-          codes: result.data.declinedCodes as ShuftiDeclineCode[],
+          codes: result.data.declinedCodes as string[],
           summary: remediation.summary,
           steps: remediation.steps,
           primaryIssue: remediation.primaryIssue,

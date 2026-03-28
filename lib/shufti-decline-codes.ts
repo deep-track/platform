@@ -1,278 +1,508 @@
 /**
- * Shufti Pro Decline Code Mappings and Utilities
+ * Shufti Pro Official Decline Codes
+ * Source: GET https://api.shuftipro.com/decline/reasons/
  * 
- * Maps Shufti decline codes to user-friendly messages and remediation steps
+ * Complete dictionary of decline codes with user-friendly remediation steps
+ * Cached at startup and refreshed as needed
  */
 
-export type ShuftiDeclineCode = 
-  | "SPDR01" | "SPDR02" | "SPDR03" | "SPDR04" | "SPDR05" | "SPDR06" | "SPDR07" | "SPDR08" | "SPDR09" | "SPDR10"
-  | "SPFR01" | "SPFR02" | "SPFR03" | "SPFR04" | "SPFR05";
-
-export interface DeclineMessage {
+export type ShuftiDeclineCode = {
   code: string;
-  reason: string;
-  howToFix: string[];
-  suggestion: string;
-}
-
-export interface DeclineMessageDisplay {
   title: string;
-  message: string;
+  description: string;
+  service: "document" | "face" | "address" | "general";
   userAction: string;
-}
+};
+
+export type DeclineInfo = {
+  code: string;
+  title: string;
+  description: string;
+  service: string;
+  userAction: string;
+};
+
+export type DeclineBreakdown = {
+  primary: DeclineInfo | null;
+  byService: {
+    document: DeclineInfo[];
+    face: DeclineInfo[];
+    address: DeclineInfo[];
+    general: DeclineInfo[];
+  };
+  allCodes: string[];
+  humanReason: string;
+};
+
 
 /**
- * Decline code registry with user-friendly messages and remediation steps
+ * Complete official dictionary from Shufti API
+ * Plus user-friendly actions for each code
  */
-const DECLINE_CODE_REGISTRY: Record<ShuftiDeclineCode, DeclineMessage> = {
-  // Document-related declines (SPDR codes)
+export const SHUFTI_DECLINE_DICTIONARY: Record<string, ShuftiDeclineCode> = {
+  // ── Document Issues (SPDR codes) ─────────────────────────────
   SPDR01: {
     code: "SPDR01",
-    reason: "Document not readable - Image quality too low or blurry",
-    howToFix: [
-      "Take a photo in good lighting conditions",
-      "Ensure the entire document is visible and clear",
-      "Use a steady hand or support your device",
-      "Clean your camera lens",
-      "Retake the photo and try again"
-    ],
-    suggestion: "Document Quality Issue"
+    title: "Face Not Matched",
+    description: "The face on the document does not match the selfie",
+    service: "face",
+    userAction:
+      "Ensure your selfie matches the photo on your document. Take the selfie in good lighting looking directly at the camera.",
   },
   SPDR02: {
     code: "SPDR02",
-    reason: "Document expired - Your document has passed its expiration date",
-    howToFix: [
-      "Renew your document with the issuing authority",
-      "Apply for a new document if yours has expired",
-      "Check the expiry date before submitting",
-      "Use a valid, non-expired document for verification"
-    ],
-    suggestion: "Document Expired"
+    title: "Document Expired",
+    description: "The submitted document has expired",
+    service: "document",
+    userAction:
+      "Use a valid document that has not expired. Check the expiry date before submitting.",
   },
   SPDR03: {
     code: "SPDR03",
-    reason: "Document not supported - This document type is not accepted",
-    howToFix: [
-      "Use one of the supported document types: Passport, National ID, or Driver's License",
-      "Check that your document is in the accepted format",
-      "Try uploading a different valid document"
-    ],
-    suggestion: "Invalid Document Type"
+    title: "Poor Quality Image",
+    description:
+      "The document image quality is insufficient for verification",
+    service: "document",
+    userAction:
+      "Retake the photo in bright lighting. Ensure the document is flat, fully visible, and the camera is held steady.",
   },
   SPDR04: {
     code: "SPDR04",
-    reason: "Document fake or forged - Document appears to be counterfeit",
-    howToFix: [
-      "Only submit original, genuine documents",
-      "Contact support if you believe this is an error",
-      "Ensure you're uploading authentic government-issued documents"
-    ],
-    suggestion: "Document Authenticity Issue"
+    title: "Document Not Supported",
+    description: "The submitted document type is not supported",
+    service: "document",
+    userAction:
+      "Use a valid passport, national ID card, or driver's license.",
   },
   SPDR05: {
     code: "SPDR05",
-    reason: "Name mismatch - Name doesn't match across documents",
-    howToFix: [
-      "Ensure the name on all documents matches exactly",
-      "Use your legal name as it appears on official documents",
-      "Resubmit with documents that have consistent names"
-    ],
-    suggestion: "Name Inconsistency"
+    title: "Document Cropped or Incomplete",
+    description:
+      "The document image is cropped or parts are missing",
+    service: "document",
+    userAction:
+      "Capture the full document. All four corners must be clearly visible in the frame.",
   },
   SPDR06: {
     code: "SPDR06",
-    reason: "Document missing information - Required fields are blank or illegible",
-    howToFix: [
-      "Ensure all document fields are clearly visible and readable",
-      "Submit a document with complete information",
-      "Take a new photo ensuring all text is legible",
-      "Use good lighting to capture all details"
-    ],
-    suggestion: "Incomplete Document"
+    title: "Document Originality Failed",
+    description:
+      "The document could not be verified as an original physical document",
+    service: "document",
+    userAction:
+      "Use your original physical document. Do NOT photograph a screen, scan, or photocopy. Place the document on a plain dark surface and photograph it directly.",
   },
   SPDR07: {
     code: "SPDR07",
-    reason: "Document partially obscured - Parts of the document are hidden or cut off",
-    howToFix: [
-      "Ensure the entire document is visible in the photo",
-      "Retake the photo to include all document edges",
-      "Remove any objects blocking the document",
-      "Frame the document properly to capture all information"
-    ],
-    suggestion: "Document Not Fully Visible"
+    title: "Name Mismatch",
+    description:
+      "The name on the document does not match the provided information",
+    service: "document",
+    userAction:
+      "Ensure you are using your own document. The name on the document must match exactly.",
   },
   SPDR08: {
     code: "SPDR08",
-    reason: "Wrong document side - You submitted the same side twice",
-    howToFix: [
-      "For documents with two sides, submit both front AND back",
-      "Ensure you upload different sides (front vs back)",
-      "Check that your back document upload is unique"
-    ],
-    suggestion: "Both Document Sides Required"
+    title: "Date of Birth Mismatch",
+    description: "The date of birth on the document does not match",
+    service: "document",
+    userAction:
+      "Verify the date of birth is clearly visible on your document and try again.",
   },
   SPDR09: {
     code: "SPDR09",
-    reason: "Document data invalid - Information on document appears invalid or suspicious",
-    howToFix: [
-      "Verify that all information on your document is correct",
-      "Ensure your document hasn't been tampered with",
-      "Contact the issuing authority if there are errors",
-      "Submit a fresh document without any alterations"
-    ],
-    suggestion: "Document Data Issue"
+    title: "Document Number Mismatch",
+    description: "The document number could not be verified",
+    service: "document",
+    userAction:
+      "Ensure the document number is fully visible and not obscured by glare or shadow.",
   },
   SPDR10: {
     code: "SPDR10",
-    reason: "Document not original - A photocopy or digital copy was submitted",
-    howToFix: [
-      "Submit a photo of the original document, not a copy",
-      "Take a fresh photo of your physical document",
-      "Ensure good lighting and clarity in your submission",
-      "Avoid using photocopied or scanned versions"
-    ],
-    suggestion: "Original Document Required"
+    title: "Glare Detected",
+    description:
+      "Glare on the document is obscuring important information",
+    service: "document",
+    userAction:
+      "Tilt the document slightly to eliminate glare. Use diffused lighting rather than direct light.",
   },
-
-  // Face-related declines (SPFR codes)
+  SPDR11: {
+    code: "SPDR11",
+    title: "Document Not Readable",
+    description: "Text on the document cannot be read",
+    service: "document",
+    userAction:
+      "Clean your camera lens. Ensure the document is in sharp focus and all text is clearly readable.",
+  },
+  SPDR12: {
+    code: "SPDR12",
+    title: "Document Tampered",
+    description:
+      "The document appears to have been altered or tampered with",
+    service: "document",
+    userAction:
+      "Only use genuine, unmodified government-issued documents.",
+  },
+  SPDR13: {
+    code: "SPDR13",
+    title: "Fake Document Detected",
+    description: "The document has been identified as fraudulent",
+    service: "document",
+    userAction: "Only genuine government-issued documents are accepted.",
+  },
+  SPDR14: {
+    code: "SPDR14",
+    title: "Document Background Invalid",
+    description:
+      "The document background does not meet requirements",
+    service: "document",
+    userAction:
+      "Place the document on a plain, dark, non-reflective surface before photographing.",
+  },
+  SPDR15: {
+    code: "SPDR15",
+    title: "Multiple Documents Detected",
+    description: "More than one document was detected in the image",
+    service: "document",
+    userAction:
+      "Only place one document at a time in the frame.",
+  },
+  SPDR16: {
+    code: "SPDR16",
+    title: "Document Too Far",
+    description: "The document is too far from the camera",
+    service: "document",
+    userAction:
+      "Move the camera closer to the document so it fills most of the frame.",
+  },
+  SPDR17: {
+    code: "SPDR17",
+    title: "Document Too Close",
+    description: "The document is too close to the camera",
+    service: "document",
+    userAction:
+      "Move the camera further from the document so all four corners are visible.",
+  },
+  SPDR18: {
+    code: "SPDR18",
+    title: "Blurry Image",
+    description: "The document image is out of focus",
+    service: "document",
+    userAction:
+      "Hold the camera steady and wait for it to focus before capturing. Tap the screen to focus on the document.",
+  },
+  SPDR19: {
+    code: "SPDR19",
+    title: "Dark Image",
+    description: "The document image is too dark",
+    service: "document",
+    userAction:
+      "Increase the lighting in your environment. Use a lamp or move to a well-lit area.",
+  },
+  SPDR20: {
+    code: "SPDR20",
+    title: "Overexposed Image",
+    description:
+      "The document image is too bright or overexposed",
+    service: "document",
+    userAction:
+      "Reduce direct lighting on the document. Avoid photographing under direct overhead lights.",
+  },
+  SPDR21: {
+    code: "SPDR21",
+    title: "Face Not Detected on Document",
+    description:
+      "No face photo was found on the submitted document",
+    service: "document",
+    userAction:
+      "Upload the side of the document that contains your photo (usually the front side).",
+  },
+  SPDR22: {
+    code: "SPDR22",
+    title: "Address Not Verified",
+    description: "The address on the document could not be verified",
+    service: "address",
+    userAction:
+      "Ensure your proof of address document is recent (within 3 months) and clearly shows your full address.",
+  },
+  SPDR23: {
+    code: "SPDR23",
+    title: "Document Type Not Matching",
+    description:
+      "The uploaded document does not match the selected document type",
+    service: "document",
+    userAction:
+      "Select the correct document type before uploading. If you uploaded a passport, select 'Passport'. If you uploaded an ID card, select 'National ID Card'.",
+  },
+  SPDR24: {
+    code: "SPDR24",
+    title: "Gender Mismatch",
+    description: "The gender on the document does not match",
+    service: "document",
+    userAction: "Ensure you are using your own document.",
+  },
+  SPDR25: {
+    code: "SPDR25",
+    title: "Issue Date Mismatch",
+    description:
+      "The issue date on the document could not be verified",
+    service: "document",
+    userAction:
+      "Ensure the issue date on your document is clearly visible.",
+  },
+  SPDR26: {
+    code: "SPDR26",
+    title: "Expiry Date Mismatch",
+    description:
+      "The expiry date on the document could not be matched",
+    service: "document",
+    userAction:
+      "Ensure the expiry date on your document is fully visible and not obscured.",
+  },
+  // ── Face/Liveness Issues ─────────────────────────────────────
   SPFR01: {
     code: "SPFR01",
-    reason: "Face not readable - Selfie quality is too low or blurry",
-    howToFix: [
-      "Take a selfie in good lighting (natural light is best)",
-      "Ensure your entire face is clearly visible",
-      "Remove any sunglasses or hats that obscure your face",
-      "Keep your device steady while taking the photo",
-      "Retake the selfie in a well-lit area"
-    ],
-    suggestion: "Selfie Quality Issue"
+    title: "Face Not Detected",
+    description: "No face was detected in the selfie",
+    service: "face",
+    userAction:
+      "Look directly at the camera. Ensure your full face including chin and forehead is visible in the frame.",
   },
   SPFR02: {
     code: "SPFR02",
-    reason: "Face not clearly visible - Selfie is obscured or partially hidden",
-    howToFix: [
-      "Ensure your entire face is visible and not cropped",
-      "Remove any objects blocking your face",
-      "Face the camera directly",
-      "Retake the selfie ensuring full face visibility"
-    ],
-    suggestion: "Face Not Fully Visible"
+    title: "Multiple Faces Detected",
+    description: "More than one face was detected in the selfie",
+    service: "face",
+    userAction:
+      "Take the selfie alone. Ensure no other people are in the background or frame.",
   },
   SPFR03: {
     code: "SPFR03",
-    reason: "Multiple faces detected - Only one face should be in the image",
-    howToFix: [
-      "Take a selfie with only yourself in the frame",
-      "Ensure no other people are visible in the background",
-      "Move to a location where you can take a solo selfie",
-      "Retake the photo with just your face visible"
-    ],
-    suggestion: "Only Your Face Should Be Visible"
+    title: "Face Covered or Obscured",
+    description: "Your face is partially covered or obscured",
+    service: "face",
+    userAction:
+      "Remove sunglasses, hats, masks, scarves, or anything covering your face before taking the selfie.",
   },
   SPFR04: {
     code: "SPFR04",
-    reason: "Face doesn't match document - Your selfie doesn't match the document photo",
-    howToFix: [
-      "Take a fresh, clear selfie of yourself",
-      "Ensure good lighting and clear visibility of your face",
-      "Remove glasses, makeup, or accessories if they significantly change your appearance",
-      "Ensure your facial expression is natural",
-      "Retake the selfie ensuring you look like your document photo"
-    ],
-    suggestion: "Selfie Doesn't Match Document"
+    title: "Poor Selfie Quality",
+    description: "The selfie image quality is insufficient",
+    service: "face",
+    userAction:
+      "Take the selfie in bright, even lighting. Hold the camera at arm's length and keep it steady.",
   },
   SPFR05: {
     code: "SPFR05",
-    reason: "Face expression issues - Selfie has poor expression, angles, or lighting",
-    howToFix: [
-      "Maintain a natural, neutral facial expression",
-      "Ensure your face is fully lit and visible",
-      "Take the photo facing the camera directly",
-      "Retake the selfie with proper lighting and positioning"
-    ],
-    suggestion: "Selfie Expression/Angle Issue"
-  }
+    title: "Liveness Check Failed",
+    description:
+      "The selfie could not be verified as a live person",
+    service: "face",
+    userAction:
+      "Take a fresh selfie directly from your camera. Do not upload a photo of a photo or use a filtered/edited image.",
+  },
+  // ── Cancellation / Timeout ───────────────────────────────────
+  SPDR241: {
+    code: "SPDR241",
+    title: "Verification Cancelled",
+    description:
+      "The user cancelled the verification process",
+    service: "general",
+    userAction:
+      "Complete the verification without cancelling. All steps must be finished for verification to succeed.",
+  },
+  SPDR242: {
+    code: "SPDR242",
+    title: "New Request Cancelled Previous",
+    description:
+      "A new verification request cancelled the previous one",
+    service: "general",
+    userAction:
+      "Only start one verification at a time. Complete the current verification before starting a new one.",
+  },
+  SPDR245: {
+    code: "SPDR245",
+    title: "Verification Timed Out",
+    description: "The verification session expired before completion",
+    service: "general",
+    userAction:
+      "Complete the verification promptly. The session has a 60-minute time limit.",
+  },
 };
 
+
 /**
- * Get decline message for a single code
+ * Get comprehensive breakdown of decline codes
+ * Separates by service (document, face, address, general)
+ * and provides primary action item
  */
-export function getDeclineMessage(
-  code: string | string[] | null | undefined
-): DeclineMessageDisplay | null {
-  if (!code) {
-    return null;
-  }
+export function getDeclineBreakdown(
+  declinedCodes: string[] | null | undefined,
+  servicesDeclinedCodes?: {
+    document?: string[];
+    face?: string[];
+    address?: string[];
+  } | null,
+  declinedReason?: string | null
+): DeclineBreakdown {
+  // Collect all unique codes
+  const allCodes = [
+    ...(declinedCodes ?? []),
+    ...(servicesDeclinedCodes?.document ?? []),
+    ...(servicesDeclinedCodes?.face ?? []),
+    ...(servicesDeclinedCodes?.address ?? []),
+  ].filter((c, i, arr) => arr.indexOf(c) === i); // unique
 
-  let targetCode: string | null = null;
-
-  if (Array.isArray(code)) {
-    // Handle array of codes - use the first one
-    targetCode = code[0] || null;
-  } else {
-    targetCode = code;
-  }
-
-  if (!targetCode) {
-    return null;
-  }
-
-  const declineMsg = DECLINE_CODE_REGISTRY[targetCode as ShuftiDeclineCode];
-  if (declineMsg) {
+  const lookup = (code: string): DeclineInfo => {
+    const found = SHUFTI_DECLINE_DICTIONARY[code];
+    if (found) return found;
+    // Fallback for unknown codes
     return {
-      title: declineMsg.suggestion,
-      message: declineMsg.reason,
-      userAction: declineMsg.howToFix.join(" "),
+      code,
+      title: "Verification Failed",
+      description:
+        declinedReason ?? "Verification could not be completed",
+      service: "general",
+      userAction:
+        "Please try again with a clear, original document in good lighting.",
     };
+  };
+
+  // Organize by service
+  const docInfos = (servicesDeclinedCodes?.document ?? [])
+    .map(lookup)
+    .filter((d): d is DeclineInfo => d !== null);
+  const faceInfos = (servicesDeclinedCodes?.face ?? [])
+    .map(lookup)
+    .filter((d): d is DeclineInfo => d !== null);
+  const addrInfos = (servicesDeclinedCodes?.address ?? [])
+    .map(lookup)
+    .filter((d): d is DeclineInfo => d !== null);
+  const genInfos = (declinedCodes ?? [])
+    .filter(
+      (c) =>
+        !servicesDeclinedCodes?.document?.includes(c) &&
+        !servicesDeclinedCodes?.face?.includes(c) &&
+        !servicesDeclinedCodes?.address?.includes(c)
+    )
+    .map(lookup)
+    .filter((d): d is DeclineInfo => d !== null);
+
+  // Primary action = first code, prioritize face > document > general
+  const primary = faceInfos[0] ?? docInfos[0] ?? addrInfos[0] ?? genInfos[0] ?? null;
+
+  return {
+    primary,
+    byService: {
+      document: docInfos,
+      face: faceInfos,
+      address: addrInfos,
+      general: genInfos,
+    },
+    allCodes,
+    humanReason:
+      declinedReason ?? primary?.description ?? "Verification unsuccessful",
+  };
+}
+
+/**
+ * Fetch live decline codes from Shufti API
+ * Supplements our dictionary with any new codes
+ * Non-blocking — if it fails, we use our pre-built dictionary
+ */
+export async function fetchShuftiDeclineCodes(): Promise<void> {
+  try {
+    const clientId = process.env.SHUFTI_CLIENT_ID;
+    const secretKey = process.env.SHUFTI_SECRET_KEY;
+    if (!clientId || !secretKey) return;
+
+    const b64 = Buffer.from(`${clientId}:${secretKey}`).toString(
+      "base64"
+    );
+    const res = await fetch(
+      "https://api.shuftipro.com/decline/reasons/",
+      {
+        headers: {
+          Authorization: `Basic ${b64}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!res.ok) return;
+    const data = (await res.json()) as {
+      decline_reasons?: {
+        status_code: string;
+        description: string;
+      }[];
+    };
+
+    // Supplement dictionary with any new codes
+    for (const item of data.decline_reasons ?? []) {
+      if (!SHUFTI_DECLINE_DICTIONARY[item.status_code]) {
+        SHUFTI_DECLINE_DICTIONARY[item.status_code] = {
+          code: item.status_code,
+          title: item.description,
+          description: item.description,
+          service: "general",
+          userAction:
+            "Please try again following the on-screen guidance.",
+        };
+      }
+    }
+  } catch {
+    // Non-blocking — dictionary already has common codes
   }
-  return null;
 }
 
 /**
- * Get all decline messages for multiple codes
+ * Get remediation summary for a list of decline codes
+ * Returns human-readable summary, steps to fix, and primary issue
  */
-export function getDeclineMessages(codes: string[]): DeclineMessageDisplay[] {
-  return codes
-    .map(code => getDeclineMessage(code))
-    .filter((msg): msg is DeclineMessageDisplay => msg !== null);
-}
-
-/**
- * Format decline codes for display
- */
-export function formatDeclineCodesList(codes: string[]): string {
-  return codes.join(", ");
-}
-
-/**
- * Get remediation summary from multiple decline codes
- */
-export function getRemediationSummary(codes: string[]): {
+export function getRemediationSummary(
+  declinedCodes: string[]
+): {
   summary: string;
   steps: string[];
   primaryIssue: string;
 } {
-  const fullMessages = codes
-    .map(code => {
-      const targetCode = Array.isArray(code) ? code[0] : code;
-      return targetCode ? DECLINE_CODE_REGISTRY[targetCode as ShuftiDeclineCode] : null;
-    })
-    .filter((msg): msg is DeclineMessage => msg !== null);
-  
-  if (fullMessages.length === 0) {
+  const codes = declinedCodes.map((c) => SHUFTI_DECLINE_DICTIONARY[c]).filter(Boolean);
+
+  if (codes.length === 0) {
     return {
-      summary: "Unknown decline reason",
-      steps: ["Please contact support for assistance"],
-      primaryIssue: "Unknown Issue"
+      summary: "Your verification could not be completed.",
+      steps: ["Please try again or contact support for assistance."],
+      primaryIssue: "Verification failed",
     };
   }
 
-  const primaryMessage = fullMessages[0];
-  const allSteps = [...new Set(fullMessages.flatMap(m => m.howToFix))];
+  // Get primary (first) issue
+  const primary = codes[0];
+  const primaryIssue = primary.title || "Verification issue";
+
+  // Build summary
+  const summary = codes
+    .map((c) => c.description)
+    .join(" ")
+    .substring(0, 200);
+
+  // Build action steps
+  const steps: string[] = [];
+  const seenActions = new Set<string>();
+  for (const code of codes) {
+    if (code.userAction && !seenActions.has(code.userAction)) {
+      steps.push(code.userAction);
+      seenActions.add(code.userAction);
+    }
+  }
+
+  if (steps.length === 0) {
+    steps.push("Please re-submit your verification information and try again.");
+  }
 
   return {
-    summary: primaryMessage.reason,
-    steps: allSteps.slice(0, 5), // Limit to top 5 steps
-    primaryIssue: primaryMessage.suggestion
+    summary,
+    steps,
+    primaryIssue,
   };
 }

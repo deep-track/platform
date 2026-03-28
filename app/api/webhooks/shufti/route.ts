@@ -63,36 +63,40 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 			? mapShuftiEventToKYBStatus(payload.event)
 			: mapShuftiEventToStatus(payload.event);
 
-		// Extract declined codes from payload if verification was declined
-		const declinedCodes = Array.isArray(payload.declined_codes)
-			? payload.declined_codes
-			: payload.declined_codes
-				? [payload.declined_codes]
-				: [];
+	// Extract declined codes from payload if verification was declined
+	const declinedCodes = Array.isArray(payload.declined_codes)
+		? payload.declined_codes
+		: payload.declined_codes
+			? [payload.declined_codes]
+			: [];
 
-		console.log("[Shufti Webhook] Calling:", endpoint);
+	console.log("[Shufti Webhook] Calling:", endpoint);
 
-		const updateBody = {
+	const updateBody = {
+		status: newStatus,
+		shuftiEventType: payload.event,
+		declineReason: payload.declined_reason ?? null,
+		// Top-level decline codes
+		declinedCodes: declinedCodes,
+		// Per-service decline codes (document, face, address)
+		servicesDeclinedCodes: payload.services_declined_codes ?? null,
+		// Standard OCR data in verification_data.document
+		extractedData: payload.verification_data ?? null,
+		// Enhanced data in additional_data.document.proof
+		additionalData: payload.additional_data ?? null,
+		verificationResult: payload.verification_result ?? null,
+	};
+
+	console.log(
+		"[Shufti Webhook] Update body:",
+		JSON.stringify({
 			status: newStatus,
-			shuftiEventType: payload.event,
-			declineReason: payload.declined_reason ?? null,
-			// CRITICAL — pass declined codes array
-			declinedCodes: declinedCodes,
-			// CRITICAL — pass full extracted data
-			extractedData: payload.verification_data ?? null,
-			verificationResult: payload.verification_result ?? null,
-		};
-
-		console.log(
-			"[Shufti Webhook] Update body:",
-			JSON.stringify({
-				status: newStatus,
-				codesCount: updateBody.declinedCodes.length,
-				hasExtractedData: !!updateBody.extractedData,
-			})
-		);
-
-		const response = await fetch(endpoint, {
+			codesCount: updateBody.declinedCodes.length,
+			hasServicesDeclined: !!updateBody.servicesDeclinedCodes,
+			hasExtractedData: !!updateBody.extractedData,
+			hasAdditionalData: !!updateBody.additionalData,
+		})
+	);		const response = await fetch(endpoint, {
 			method: "PATCH",
 			headers: {
 				"Content-Type": "application/json",

@@ -15,8 +15,11 @@ export async function PATCH(
         status: body.status,
         shuftiEventType: body.shuftiEventType,
         extractedData: body.extractedData,
+        additionalData: body.additionalData ?? undefined,
         verificationResult: body.verificationResult,
         declineReason: body.declineReason,
+        declinedCodes: body.declinedCodes ?? [],
+        servicesDeclinedCodes: body.servicesDeclinedCodes ?? undefined,
       },
     });
 
